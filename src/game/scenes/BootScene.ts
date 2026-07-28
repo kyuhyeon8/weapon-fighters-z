@@ -6,7 +6,11 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     const fighterIds: FighterId[] = ['sword', 'fist', 'minigun', 'clock', 'plant', 'rock'];
-    fighterIds.forEach((id) => this.createFighterTexture(id));
+    this.createBodyTexture();
+    fighterIds.forEach((id) => {
+      this.createFighterTexture(id);
+      this.createWeaponTexture(id);
+    });
     const g = this.make.graphics({ x: 0, y: 0 });
     g.fillStyle(0xffffff);
     g.fillRect(0, 0, 32, 32);
@@ -18,49 +22,98 @@ export class BootScene extends Phaser.Scene {
     this.scene.start('TitleScene');
   }
 
+  private createBodyTexture(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.lineStyle(4, 0x080b12, 1);
+    g.fillStyle(0xffffff).fillCircle(22, 22, 20).strokeCircle(22, 22, 20);
+    g.lineStyle(2, 0xffffff, 0.38);
+    g.beginPath().arc(17, 18, 12, 3.55, 5.1).strokePath();
+    g.generateTexture('fighter-body', 44, 44);
+    g.destroy();
+  }
+
+  private createWeaponTexture(id: FighterId): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const outline = 0x080b12;
+    g.lineStyle(4, outline, 1);
+    g.fillStyle(0xffffff);
+
+    if (id === 'sword') {
+      g.fillTriangle(4, 28, 54, 3, 14, 34).strokeTriangle(4, 28, 54, 3, 14, 34);
+      g.fillRect(5, 29, 16, 6).strokeRect(5, 29, 16, 6);
+      g.lineStyle(5, outline).lineBetween(10, 35, 5, 42);
+    } else if (id === 'fist') {
+      g.fillCircle(17, 14, 8).strokeCircle(17, 14, 8);
+      g.fillCircle(27, 18, 8).strokeCircle(27, 18, 8);
+      g.fillCircle(19, 28, 8).strokeCircle(19, 28, 8);
+      g.fillRoundedRect(5, 20, 28, 14, 6).strokeRoundedRect(5, 20, 28, 14, 6);
+    } else if (id === 'minigun') {
+      g.fillRoundedRect(3, 12, 22, 18, 4).strokeRoundedRect(3, 12, 22, 18, 4);
+      g.fillRect(22, 13, 31, 5).strokeRect(22, 13, 31, 5);
+      g.fillRect(22, 24, 31, 5).strokeRect(22, 24, 31, 5);
+      g.fillRect(9, 29, 8, 12).strokeRect(9, 29, 8, 12);
+    } else if (id === 'clock') {
+      g.fillCircle(25, 21, 18).strokeCircle(25, 21, 18);
+      g.lineStyle(3, outline).lineBetween(25, 21, 25, 9).lineBetween(25, 21, 36, 27);
+      g.fillStyle(outline).fillCircle(25, 21, 3);
+      g.lineStyle(3, outline).strokeCircle(25, 21, 11);
+    } else if (id === 'plant') {
+      g.fillRoundedRect(7, 16, 27, 20, 5).strokeRoundedRect(7, 16, 27, 20, 5);
+      g.fillTriangle(8, 18, 0, 11, 8, 28).strokeTriangle(8, 18, 0, 11, 8, 28);
+      g.lineStyle(4, outline).beginPath().arc(23, 16, 12, 3.4, 6).strokePath();
+      g.fillStyle(0xffffff).fillCircle(47, 8, 4).strokeCircle(47, 8, 4);
+    } else {
+      g.fillTriangle(3, 35, 13, 7, 34, 3).strokeTriangle(3, 35, 13, 7, 34, 3);
+      g.fillTriangle(3, 35, 34, 3, 48, 32).strokeTriangle(3, 35, 34, 3, 48, 32);
+      g.lineStyle(3, outline).lineBetween(16, 10, 24, 23).lineBetween(24, 23, 39, 17);
+    }
+    g.generateTexture(`weapon-${id}`, 56, 44);
+    g.destroy();
+  }
+
   private createFighterTexture(id: FighterId): void {
     const g = this.make.graphics({ x: 0, y: 0 });
     const outline = 0x080b12;
-    g.lineStyle(6, outline, 1);
+    g.lineStyle(4, outline, 1);
     g.fillStyle(0xffffff);
-    g.fillCircle(38, 45, 28).strokeCircle(38, 45, 28);
-    g.lineStyle(3, 0xffffff, 0.34);
-    g.beginPath().arc(31, 38, 17, 3.55, 5.15).strokePath();
-    g.lineStyle(5, outline, 1);
+    g.fillCircle(48, 42, 20).strokeCircle(48, 42, 20);
+    g.lineStyle(2, 0xffffff, 0.38);
+    g.beginPath().arc(43, 38, 12, 3.55, 5.1).strokePath();
+    g.lineStyle(4, outline, 1);
 
     if (id === 'sword') {
       g.fillStyle(0xffffff);
-      g.fillTriangle(48, 51, 94, 10, 61, 55).strokeTriangle(48, 51, 94, 10, 61, 55);
-      g.fillStyle(0xffffff).fillRect(46, 49, 20, 8).strokeRect(46, 49, 20, 8);
-      g.lineStyle(7, outline).lineBetween(51, 55, 43, 64);
+      g.fillTriangle(57, 39, 92, 15, 65, 45).strokeTriangle(57, 39, 92, 15, 65, 45);
+      g.fillRect(55, 40, 15, 6).strokeRect(55, 40, 15, 6);
+      g.lineStyle(5, outline).lineBetween(59, 45, 53, 52);
     } else if (id === 'fist') {
       g.fillStyle(0xffffff);
-      g.fillCircle(67, 38, 12).strokeCircle(67, 38, 12);
-      g.fillCircle(77, 45, 12).strokeCircle(77, 45, 12);
-      g.fillCircle(67, 54, 12).strokeCircle(67, 54, 12);
-      g.fillRoundedRect(57, 45, 26, 19, 8).strokeRoundedRect(57, 45, 26, 19, 8);
+      g.fillCircle(68, 35, 8).strokeCircle(68, 35, 8);
+      g.fillCircle(76, 40, 8).strokeCircle(76, 40, 8);
+      g.fillCircle(68, 47, 8).strokeCircle(68, 47, 8);
+      g.fillRoundedRect(59, 40, 21, 13, 6).strokeRoundedRect(59, 40, 21, 13, 6);
     } else if (id === 'minigun') {
-      g.fillStyle(0xffffff).fillRoundedRect(54, 32, 27, 23, 6).strokeRoundedRect(54, 32, 27, 23, 6);
-      g.fillRect(76, 34, 20, 5).strokeRect(76, 34, 20, 5);
-      g.fillRect(76, 47, 20, 5).strokeRect(76, 47, 20, 5);
-      g.fillRect(61, 52, 9, 16).strokeRect(61, 52, 9, 16);
+      g.fillStyle(0xffffff).fillRoundedRect(59, 34, 19, 15, 4).strokeRoundedRect(59, 34, 19, 15, 4);
+      g.fillRect(75, 35, 18, 4).strokeRect(75, 35, 18, 4);
+      g.fillRect(75, 44, 18, 4).strokeRect(75, 44, 18, 4);
+      g.fillRect(63, 48, 7, 10).strokeRect(63, 48, 7, 10);
     } else if (id === 'clock') {
-      g.fillStyle(0xffffff).fillCircle(71, 45, 20).strokeCircle(71, 45, 20);
-      g.lineStyle(4, outline).lineBetween(71, 45, 71, 31).lineBetween(71, 45, 82, 51);
-      g.fillStyle(outline).fillCircle(71, 45, 4);
-      g.lineStyle(4, outline).strokeCircle(71, 45, 13);
+      g.fillStyle(0xffffff).fillCircle(70, 40, 13).strokeCircle(70, 40, 13);
+      g.lineStyle(3, outline).lineBetween(70, 40, 70, 31).lineBetween(70, 40, 78, 45);
+      g.fillStyle(outline).fillCircle(70, 40, 3);
+      g.lineStyle(3, outline).strokeCircle(70, 40, 8);
     } else if (id === 'plant') {
-      g.fillStyle(0xffffff).fillRoundedRect(55, 38, 27, 23, 7).strokeRoundedRect(55, 38, 27, 23, 7);
-      g.fillTriangle(56, 42, 42, 34, 56, 53).strokeTriangle(56, 42, 42, 34, 56, 53);
-      g.lineStyle(5, outline).beginPath().arc(70, 38, 13, 3.4, 6.05).strokePath();
-      g.fillStyle(0xffffff).fillCircle(91, 31, 5).strokeCircle(91, 31, 5);
+      g.fillStyle(0xffffff).fillRoundedRect(59, 37, 19, 16, 5).strokeRoundedRect(59, 37, 19, 16, 5);
+      g.fillTriangle(60, 39, 50, 34, 60, 47).strokeTriangle(60, 39, 50, 34, 60, 47);
+      g.lineStyle(4, outline).beginPath().arc(69, 37, 9, 3.4, 6).strokePath();
+      g.fillStyle(0xffffff).fillCircle(86, 31, 4).strokeCircle(86, 31, 4);
     } else {
       g.fillStyle(0xffffff);
-      g.fillTriangle(53, 59, 62, 27, 83, 21).strokeTriangle(53, 59, 62, 27, 83, 21);
-      g.fillTriangle(53, 59, 83, 21, 94, 52).strokeTriangle(53, 59, 83, 21, 94, 52);
-      g.lineStyle(4, outline).lineBetween(66, 31, 74, 44).lineBetween(74, 44, 87, 39);
+      g.fillTriangle(57, 49, 65, 27, 80, 23).strokeTriangle(57, 49, 65, 27, 80, 23);
+      g.fillTriangle(57, 49, 80, 23, 89, 46).strokeTriangle(57, 49, 80, 23, 89, 46);
+      g.lineStyle(3, outline).lineBetween(67, 30, 73, 40).lineBetween(73, 40, 83, 36);
     }
-    g.generateTexture(`fighter-${id}`, 100, 78);
+    g.generateTexture(`fighter-${id}`, 96, 64);
     g.destroy();
   }
 }

@@ -44,6 +44,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   private jumpBufferedUntil = 0;
   private coyoteUntil = 0;
   readonly displayTint: number;
+  readonly weapon: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -53,7 +54,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     playerNumber: 1 | 2,
     tint: number,
   ) {
-    super(scene, x, y, `fighter-${config.id}`);
+    super(scene, x, y, 'fighter-body');
     this.playerNumber = playerNumber;
     this.fighterConfig = config;
     this.displayTint = tint;
@@ -67,12 +68,16 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     };
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.weapon = scene.add.image(x, y - 22, `weapon-${config.id}`)
+      .setOrigin(0.12, 0.5)
+      .setTint(tint)
+      .setDepth(11);
     this.setTint(tint);
     this.setOrigin(0.5, 1);
     this.setCollideWorldBounds(false);
     this.setDepth(10);
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(58, 58).setOffset(21, 20);
+    body.setSize(40, 40).setOffset(2, 4);
     body.setMaxVelocity(620, 900);
   }
 
@@ -98,6 +103,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.jumpBufferedUntil = 0;
     this.coyoteUntil = 0;
     this.bodyRef.enable = true;
+    this.updateWeaponPose();
   }
 
   updateFighter(
@@ -109,7 +115,10 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.updateAttack(now);
     this.stats = regenerateMana(this.stats, this.fighterConfig.manaRegen, delta / 1000);
 
-    if (this.state === 'KO') return;
+    if (this.state === 'KO') {
+      this.updateWeaponPose();
+      return;
+    }
     if (now > this.invulnerableUntil && this.state === 'RESPAWN_INVULNERABLE') {
       this.state = 'FALL';
       this.setAlpha(1);
@@ -167,6 +176,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (grounded && !this.lastGrounded && this.state === 'FALL') this.state = 'IDLE';
     this.lastGrounded = grounded;
     this.updatePose();
+    this.updateWeaponPose();
   }
 
   tryAttack(kind: AttackKind, now: number): boolean {
@@ -230,7 +240,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (!attack || attack.phase !== 'active') return null;
     const { config, direction } = attack;
     const centerX = this.x + config.hitboxOffsetX * direction;
-    const centerY = this.y - 48 + config.hitboxOffsetY;
+    const centerY = this.y - 24 + config.hitboxOffsetY;
     return new Phaser.Geom.Rectangle(
       centerX - config.hitboxWidth / 2,
       centerY - config.hitboxHeight / 2,
@@ -240,7 +250,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   }
 
   getHurtbox(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(this.x - 29, this.y - 58, 58, 58);
+    return new Phaser.Geom.Rectangle(this.x - 20, this.y - 40, 40, 40);
   }
 
   receiveHit(attacker: Fighter, now: number): boolean {
@@ -323,11 +333,56 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updatePose(): void {
-    if (this.state === 'RUN') this.setAngle(this.facing * 5);
-    else if (this.state === 'JUMP') this.setAngle(this.facing * -8);
-    else if (this.state === 'FALL') this.setAngle(this.facing * 8);
-    else if (this.currentAttack?.phase === 'startup') this.setScale(0.92, 1.06);
+    this.setAngle(0);
+    if (this.currentAttack?.phase === 'startup') this.setScale(0.92, 1.06);
     else if (this.currentAttack?.phase === 'active') this.setScale(1.18, 0.94);
-    else this.setScale(1).setAngle(0);
+    else this.setScale(1);
+  }
+
+  private updateWeaponPose(): void {
+    let angle = -24;
+    let reach = 11;
+    let vertical = -22;
+    let weaponScale = 0.9;
+
+    if (this.currentAttack) {
+      const phase = this.currentAttack.phase;
+      if (phase === 'startup') {
+        angle = -72;
+        reach = 7;
+      } else if (phase === 'active') {
+        angle = this.fighterConfig.id === 'minigun' ? -6 : 28;
+        reach = this.fighterConfig.id === 'minigun' ? 7 : 18;
+        weaponScale = 1.08;
+      } else {
+        angle = -5;
+        reach = 13;
+      }
+      if (this.currentAttack.kind === 'ultimate') {
+        weaponScale += 0.18;
+        vertical -= 3;
+      } else if (this.currentAttack.kind === 'skill') {
+        angle += this.fighterConfig.id === 'clock' ? 70 : 12;
+      }
+    } else if (this.state === 'RUN') {
+      angle = -17;
+      vertical += Math.sin(this.scene.time.now / 70) * 2;
+    } else if (this.state === 'JUMP') {
+      angle = -42;
+    } else if (this.state === 'FALL') {
+      angle = 8;
+    } else if (this.state === 'HITSTUN' || this.state === 'STUN') {
+      angle = 58;
+      reach = 5;
+    }
+
+    this.weapon
+      .setPosition(this.x + this.facing * reach, this.y + vertical)
+      .setRotation(Phaser.Math.DegToRad(angle * this.facing))
+      .setScale(this.facing * weaponScale, weaponScale)
+      .setAlpha(this.alpha)
+      .setVisible(this.visible)
+      .clearTint()
+      .setTint(this.displayTint);
   }
 }
