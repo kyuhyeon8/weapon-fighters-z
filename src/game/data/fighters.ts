@@ -1,0 +1,76 @@
+import type { FighterConfig, FighterId } from './types';
+
+export const fighters: Record<FighterId, FighterConfig> = {
+  sword: {
+    id: 'sword',
+    name: '특수 장검',
+    style: '빠른 베기와 중거리 견제',
+    color: 0x63d8ff,
+    alternateColor: 0xc176ff,
+    maxHealth: 100,
+    maxMana: 100,
+    startMana: 20,
+    manaRegen: 8,
+    moveSpeed: 260,
+    jumpVelocity: 560,
+    basicAttack: {
+      id: 'sword-slash', name: '장검 베기', damage: 7, manaCost: 0,
+      startupMs: 90, activeMs: 100, recoveryMs: 220, hitstunMs: 210,
+      knockbackX: 190, knockbackY: -80, hitboxWidth: 112, hitboxHeight: 72,
+      hitboxOffsetX: 68, hitboxOffsetY: -4, hitstopMs: 40,
+    },
+    skill: {
+      id: 'sword-slam', name: '내려찍기', damage: 20, manaCost: 30,
+      startupMs: 260, activeMs: 120, recoveryMs: 440, hitstunMs: 330,
+      knockbackX: 240, knockbackY: -250, hitboxWidth: 96, hitboxHeight: 118,
+      hitboxOffsetX: 54, hitboxOffsetY: 10, hitstopMs: 70,
+    },
+    ultimate: {
+      id: 'sword-screen-slash', name: '화면 연속 베기', damage: 10, manaCost: 75,
+      startupMs: 360, activeMs: 260, recoveryMs: 720, hitstunMs: 800,
+      knockbackX: 420, knockbackY: -280, hitboxWidth: 520, hitboxHeight: 260,
+      hitboxOffsetX: 220, hitboxOffsetY: -30, hitstopMs: 110,
+    },
+    descriptions: {
+      basic: '빠른 전방 장검 베기 · 피해 7',
+      skill: '내려찍기 후 칼날 파편 3개 · 최대 피해 35',
+      ultimate: '범위 안의 적을 4회 연속 베기 · 총 피해 40',
+    },
+  },
+  fist: {
+    id: 'fist',
+    name: '주먹',
+    style: '느리지만 강력한 근접 압박',
+    color: 0xff805f,
+    alternateColor: 0xffd35f,
+    maxHealth: 100,
+    maxMana: 100,
+    startMana: 20,
+    manaRegen: 8,
+    moveSpeed: 260,
+    jumpVelocity: 560,
+    basicAttack: {
+      id: 'fist-heavy', name: '강펀치', damage: 10, manaCost: 0,
+      startupMs: 150, activeMs: 120, recoveryMs: 330, hitstunMs: 260,
+      knockbackX: 270, knockbackY: -120, hitboxWidth: 76, hitboxHeight: 68,
+      hitboxOffsetX: 51, hitboxOffsetY: -5, hitstopMs: 40,
+    },
+    skill: {
+      id: 'fist-uppercut', name: '어퍼컷', damage: 20, manaCost: 25,
+      startupMs: 210, activeMs: 140, recoveryMs: 560, hitstunMs: 420,
+      knockbackX: 260, knockbackY: -520, hitboxWidth: 84, hitboxHeight: 142,
+      hitboxOffsetX: 45, hitboxOffsetY: -45, hitstopMs: 70,
+    },
+    ultimate: {
+      id: 'fist-rush', name: '펀치 러시', damage: 45, manaCost: 60,
+      startupMs: 280, activeMs: 180, recoveryMs: 760, hitstunMs: 850,
+      knockbackX: 520, knockbackY: -260, hitboxWidth: 138, hitboxHeight: 94,
+      hitboxOffsetX: 83, hitboxOffsetY: 0, hitstopMs: 110,
+    },
+    descriptions: {
+      basic: '강한 펀치 · 피해 10 · 적중 시 투지 +1',
+      skill: '상대를 띄우고 둔화 · 피해 20 · 투지 +2',
+      ultimate: '투지를 모두 소모하는 연속 러시 · 최대 피해 60',
+    },
+  },
+};

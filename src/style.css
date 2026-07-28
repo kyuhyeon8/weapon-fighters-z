@@ -1,0 +1,16 @@
+:root {
+  color: #f8fbff;
+  background: #050711;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+html, body, #game { width: 100%; height: 100%; margin: 0; }
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(79, 96, 170, .28), transparent 42%),
+    #050711;
+}
+canvas { display: block; margin: auto; max-width: 100%; max-height: 100%; }
