@@ -72,7 +72,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(false);
     this.setDepth(10);
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(48, 92).setOffset(3, 4);
+    body.setSize(58, 58).setOffset(21, 20);
     body.setMaxVelocity(620, 900);
   }
 
@@ -240,7 +240,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   }
 
   getHurtbox(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(this.x - 24, this.y - 92, 48, 92);
+    return new Phaser.Geom.Rectangle(this.x - 29, this.y - 58, 58, 58);
   }
 
   receiveHit(attacker: Fighter, now: number): boolean {

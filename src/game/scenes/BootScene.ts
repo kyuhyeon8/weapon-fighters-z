@@ -20,35 +20,47 @@ export class BootScene extends Phaser.Scene {
 
   private createFighterTexture(id: FighterId): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    g.lineStyle(4, 0x111426, 1);
+    const outline = 0x080b12;
+    g.lineStyle(6, outline, 1);
     g.fillStyle(0xffffff);
-    g.fillCircle(37, 18, 14).strokeCircle(37, 18, 14);
-    g.fillRoundedRect(20, 31, 34, 49, 9).strokeRoundedRect(20, 31, 34, 49, 9);
-    g.fillRoundedRect(16, 76, 17, 30, 7).strokeRoundedRect(16, 76, 17, 30, 7);
-    g.fillRoundedRect(41, 76, 17, 30, 7).strokeRoundedRect(41, 76, 17, 30, 7);
+    g.fillCircle(38, 45, 28).strokeCircle(38, 45, 28);
+    g.lineStyle(3, 0xffffff, 0.34);
+    g.beginPath().arc(31, 38, 17, 3.55, 5.15).strokePath();
+    g.lineStyle(5, outline, 1);
 
     if (id === 'sword') {
-      g.fillStyle(0xe7f8ff).fillTriangle(59, 26, 69, 1, 72, 32).strokeTriangle(59, 26, 69, 1, 72, 32);
-      g.fillStyle(0xffffff).fillRect(53, 28, 18, 7).strokeRect(53, 28, 18, 7);
+      g.fillStyle(0xffffff);
+      g.fillTriangle(48, 51, 94, 10, 61, 55).strokeTriangle(48, 51, 94, 10, 61, 55);
+      g.fillStyle(0xffffff).fillRect(46, 49, 20, 8).strokeRect(46, 49, 20, 8);
+      g.lineStyle(7, outline).lineBetween(51, 55, 43, 64);
     } else if (id === 'fist') {
-      g.fillStyle(0xffffff).fillCircle(13, 49, 12).strokeCircle(13, 49, 12);
-      g.fillCircle(61, 49, 12).strokeCircle(61, 49, 12);
+      g.fillStyle(0xffffff);
+      g.fillCircle(67, 38, 12).strokeCircle(67, 38, 12);
+      g.fillCircle(77, 45, 12).strokeCircle(77, 45, 12);
+      g.fillCircle(67, 54, 12).strokeCircle(67, 54, 12);
+      g.fillRoundedRect(57, 45, 26, 19, 8).strokeRoundedRect(57, 45, 26, 19, 8);
     } else if (id === 'minigun') {
-      g.fillStyle(0xffffff).fillRoundedRect(47, 42, 26, 14, 4).strokeRoundedRect(47, 42, 26, 14, 4);
-      g.fillRect(54, 56, 8, 13).strokeRect(54, 56, 8, 13);
-      g.fillRect(67, 44, 7, 4).fillRect(67, 50, 7, 4);
+      g.fillStyle(0xffffff).fillRoundedRect(54, 32, 27, 23, 6).strokeRoundedRect(54, 32, 27, 23, 6);
+      g.fillRect(76, 34, 20, 5).strokeRect(76, 34, 20, 5);
+      g.fillRect(76, 47, 20, 5).strokeRect(76, 47, 20, 5);
+      g.fillRect(61, 52, 9, 16).strokeRect(61, 52, 9, 16);
     } else if (id === 'clock') {
-      g.fillStyle(0xffffff).fillCircle(60, 48, 14).strokeCircle(60, 48, 14);
-      g.lineStyle(3, 0x111426).lineBetween(60, 48, 60, 38).lineBetween(60, 48, 68, 52);
+      g.fillStyle(0xffffff).fillCircle(71, 45, 20).strokeCircle(71, 45, 20);
+      g.lineStyle(4, outline).lineBetween(71, 45, 71, 31).lineBetween(71, 45, 82, 51);
+      g.fillStyle(outline).fillCircle(71, 45, 4);
+      g.lineStyle(4, outline).strokeCircle(71, 45, 13);
     } else if (id === 'plant') {
-      g.fillStyle(0xffffff).fillRoundedRect(48, 42, 22, 18, 5).strokeRoundedRect(48, 42, 22, 18, 5);
-      g.fillTriangle(46, 45, 36, 39, 48, 53).strokeTriangle(46, 45, 36, 39, 48, 53);
-      g.fillCircle(65, 36, 5).strokeCircle(65, 36, 5);
+      g.fillStyle(0xffffff).fillRoundedRect(55, 38, 27, 23, 7).strokeRoundedRect(55, 38, 27, 23, 7);
+      g.fillTriangle(56, 42, 42, 34, 56, 53).strokeTriangle(56, 42, 42, 34, 56, 53);
+      g.lineStyle(5, outline).beginPath().arc(70, 38, 13, 3.4, 6.05).strokePath();
+      g.fillStyle(0xffffff).fillCircle(91, 31, 5).strokeCircle(91, 31, 5);
     } else {
-      g.fillStyle(0xffffff).fillCircle(61, 49, 16).strokeCircle(61, 49, 16);
-      g.lineStyle(2, 0x111426).lineBetween(52, 43, 66, 54).lineBetween(58, 36, 62, 58);
+      g.fillStyle(0xffffff);
+      g.fillTriangle(53, 59, 62, 27, 83, 21).strokeTriangle(53, 59, 62, 27, 83, 21);
+      g.fillTriangle(53, 59, 83, 21, 94, 52).strokeTriangle(53, 59, 83, 21, 94, 52);
+      g.lineStyle(4, outline).lineBetween(66, 31, 74, 44).lineBetween(74, 44, 87, 39);
     }
-    g.generateTexture(`fighter-${id}`, 76, 108);
+    g.generateTexture(`fighter-${id}`, 100, 78);
     g.destroy();
   }
 }
