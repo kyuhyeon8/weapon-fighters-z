@@ -46,10 +46,10 @@ describe('combat calculations', () => {
   });
 
   it.each([
-    [0, 45],
-    [1, 45],
-    [2, 55],
-    [3, 55],
+    [0, 30],
+    [1, 30],
+    [2, 40],
+    [3, 40],
     [4, 60],
   ])('calculates punch rush total damage for %i stacks', (rage, damage) => {
     expect(punchRushDamage(rage)).toBe(damage);

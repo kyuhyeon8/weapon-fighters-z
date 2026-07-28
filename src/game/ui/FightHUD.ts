@@ -7,39 +7,59 @@ export class FightHUD {
   private readonly center: Phaser.GameObjects.Text;
   private readonly p1Rage: Phaser.GameObjects.Text;
   private readonly p2Rage: Phaser.GameObjects.Text;
+  private readonly p1Value: Phaser.GameObjects.Text;
+  private readonly p2Value: Phaser.GameObjects.Text;
   private p1Trail = 100;
   private p2Trail = 100;
 
   constructor(scene: Phaser.Scene, p1: Fighter, p2: Fighter) {
     this.graphics = scene.add.graphics().setDepth(50);
-    scene.add.text(42, 24, `1P  ${p1.fighterConfig.name}`, {
-      fontSize: '21px', fontStyle: 'bold', color: '#ffffff',
+    scene.add.circle(57, 69, 47, 0x0b1024, 0.96).setStrokeStyle(4, p1.fighterConfig.color).setDepth(50);
+    scene.add.circle(1223, 69, 47, 0x0b1024, 0.96).setStrokeStyle(4, p2.fighterConfig.color).setDepth(50);
+    scene.add.image(57, 73, `fighter-${p1.fighterConfig.id}`)
+      .setTint(p1.displayTint).setScale(0.48).setDepth(51);
+    scene.add.image(1223, 73, `fighter-${p2.fighterConfig.id}`)
+      .setTint(p2.displayTint).setScale(0.48).setFlipX(true).setDepth(51);
+    scene.add.text(110, 20, `1P  ${p1.fighterConfig.name}`, {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '19px', color: '#ffffff',
     }).setDepth(51);
-    scene.add.text(1238, 24, `${p2.fighterConfig.name}  2P`, {
-      fontSize: '21px', fontStyle: 'bold', color: '#ffffff',
+    scene.add.text(1170, 20, `${p2.fighterConfig.name}  2P`, {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '19px', color: '#ffffff',
     }).setOrigin(1, 0).setDepth(51);
     this.center = scene.add.text(640, 24, '', {
       fontSize: '20px', fontStyle: 'bold', color: '#ffffff', align: 'center',
     }).setOrigin(0.5, 0).setDepth(51);
-    this.p1Rage = scene.add.text(42, 107, '', {
+    this.p1Rage = scene.add.text(110, 105, '', {
       fontSize: '15px', fontStyle: 'bold', color: '#ffbe4f',
     }).setDepth(51);
-    this.p2Rage = scene.add.text(1238, 107, '', {
+    this.p2Rage = scene.add.text(1170, 105, '', {
       fontSize: '15px', fontStyle: 'bold', color: '#ffbe4f',
     }).setOrigin(1, 0).setDepth(51);
+    this.p1Value = scene.add.text(118, 58, '', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#ffffff',
+    }).setDepth(52);
+    this.p2Value = scene.add.text(1162, 58, '', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#ffffff',
+    }).setOrigin(1, 0).setDepth(52);
+    scene.add.text(640, 104, 'ESC  PAUSE', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: '#8ca0d4',
+      backgroundColor: '#091022cc', padding: { x: 9, y: 5 },
+    }).setOrigin(0.5, 0).setDepth(51);
   }
 
   update(p1: Fighter, p2: Fighter, rounds: RoundManager, now: number): void {
     this.p1Trail = Phaser.Math.Linear(this.p1Trail, p1.stats.health, 0.06);
     this.p2Trail = Phaser.Math.Linear(this.p2Trail, p2.stats.health, 0.06);
     this.graphics.clear();
-    this.drawBars(42, 57, p1.stats.health, this.p1Trail, p1.stats.mana, p1.manaFlashUntil > now, false);
-    this.drawBars(1238, 57, p2.stats.health, this.p2Trail, p2.stats.mana, p2.manaFlashUntil > now, true);
+    this.drawBars(110, 51, p1.stats.health, this.p1Trail, p1.stats.mana, p1.manaFlashUntil > now, false);
+    this.drawBars(1170, 51, p2.stats.health, this.p2Trail, p2.stats.mana, p2.manaFlashUntil > now, true);
     this.center.setText(
       `ROUND ${rounds.round}\n${rounds.mode === 'bestOf3' ? `${rounds.p1Wins}  —  ${rounds.p2Wins}` : 'FINAL ROUND'}`,
     );
     this.p1Rage.setText(p1.fighterConfig.id === 'fist' ? `투지 ${'◆'.repeat(p1.stats.rage)}${'◇'.repeat(4 - p1.stats.rage)}` : '');
     this.p2Rage.setText(p2.fighterConfig.id === 'fist' ? `투지 ${'◆'.repeat(p2.stats.rage)}${'◇'.repeat(4 - p2.stats.rage)}` : '');
+    this.p1Value.setText(`${Math.ceil(p1.stats.health)}`);
+    this.p2Value.setText(`${Math.ceil(p2.stats.health)}`);
   }
 
   private drawBars(
@@ -51,7 +71,7 @@ export class FightHUD {
     manaFlash: boolean,
     reverse: boolean,
   ): void {
-    const width = 430;
+    const width = 380;
     const origin = reverse ? x - width : x;
     this.graphics.fillStyle(0x070916, 0.9).fillRoundedRect(origin - 4, y - 4, width + 8, 30, 6);
     this.graphics.fillStyle(0xffa44f, 0.55)

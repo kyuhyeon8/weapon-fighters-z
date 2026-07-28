@@ -33,8 +33,9 @@ export function addRage(stats: CombatantStats, amount: number): CombatantStats {
 }
 
 export function punchRushDamage(rage: number): number {
-  const rush = rage >= 4 ? 45 : rage >= 2 ? 40 : 30;
-  return rush + 15;
+  if (rage >= 4) return 60;
+  if (rage >= 2) return 40;
+  return 30;
 }
 
 export function consumeRage(stats: CombatantStats): CombatantStats {

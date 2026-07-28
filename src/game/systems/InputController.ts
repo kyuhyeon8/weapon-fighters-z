@@ -20,17 +20,17 @@ export class InputController {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
       jump: Phaser.Input.Keyboard.KeyCodes.W,
-      basic: Phaser.Input.Keyboard.KeyCodes.F,
-      skill: Phaser.Input.Keyboard.KeyCodes.G,
-      ultimate: Phaser.Input.Keyboard.KeyCodes.H,
+      basic: Phaser.Input.Keyboard.KeyCodes.E,
+      skill: Phaser.Input.Keyboard.KeyCodes.R,
+      ultimate: Phaser.Input.Keyboard.KeyCodes.Q,
     }) as PlayerInput;
     this.p2 = keyboard.addKeys({
-      left: Phaser.Input.Keyboard.KeyCodes.LEFT,
-      right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
-      jump: Phaser.Input.Keyboard.KeyCodes.UP,
-      basic: Phaser.Input.Keyboard.KeyCodes.J,
-      skill: Phaser.Input.Keyboard.KeyCodes.K,
-      ultimate: Phaser.Input.Keyboard.KeyCodes.L,
+      left: Phaser.Input.Keyboard.KeyCodes.L,
+      right: Phaser.Input.Keyboard.KeyCodes.QUOTES,
+      jump: Phaser.Input.Keyboard.KeyCodes.P,
+      basic: Phaser.Input.Keyboard.KeyCodes.OPEN_BRACKET,
+      skill: Phaser.Input.Keyboard.KeyCodes.CLOSED_BRACKET,
+      ultimate: Phaser.Input.Keyboard.KeyCodes.O,
     }) as PlayerInput;
   }
 }

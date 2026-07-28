@@ -1,4 +1,4 @@
-export type FighterId = 'sword' | 'fist';
+export type FighterId = 'sword' | 'fist' | 'minigun' | 'clock' | 'plant' | 'rock';
 export type AttackKind = 'basic' | 'skill' | 'ultimate';
 export type GameMode = 'single' | 'bestOf3';
 export type MapId = 'meadow' | 'void';
@@ -19,6 +19,7 @@ export interface AttackConfig {
   hitboxOffsetX: number;
   hitboxOffsetY: number;
   hitstopMs: number;
+  lungeVelocity?: number;
 }
 
 export interface FighterConfig {

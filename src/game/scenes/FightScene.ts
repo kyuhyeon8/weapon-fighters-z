@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import { fighters } from '../data/fighters';
 import type { AttackKind, MatchSettings, RoundResult } from '../data/types';
-import { Fighter } from '../entities/Fighter';
+import { Fighter, type ActiveAttack } from '../entities/Fighter';
 import { CombatSystem } from '../systems/CombatSystem';
 import { determineRoundResult } from '../systems/CombatLogic';
 import { InputController } from '../systems/InputController';
 import { RoundManager } from '../systems/RoundManager';
 import { SoundSystem } from '../systems/SoundSystem';
 import { FightHUD } from '../ui/FightHUD';
+import { addButton, palette } from '../ui/ui';
 
 export class FightScene extends Phaser.Scene {
   private settings!: MatchSettings;
@@ -24,6 +25,11 @@ export class FightScene extends Phaser.Scene {
   private debugText!: Phaser.GameObjects.Text;
   private debugVisible = false;
   private roundEnding = false;
+  private isPaused = false;
+  private pauseObjects: Phaser.GameObjects.GameObject[] = [];
+  private controlsBeforePause: [boolean, boolean] = [false, false];
+  private debugHandler?: () => void;
+  private escapeHandler?: () => void;
 
   constructor() { super('FightScene'); }
 
@@ -46,16 +52,43 @@ export class FightScene extends Phaser.Scene {
     const p1Config = fighters[this.settings.p1];
     const p2Config = fighters[this.settings.p2];
     const same = this.settings.p1 === this.settings.p2;
-    this.p1 = new Fighter(this, 330, 500, p1Config, 1, p1Config.color);
-    this.p2 = new Fighter(this, 950, 500, p2Config, 2, same ? p2Config.alternateColor : p2Config.color);
+    const p1Spawn = this.settings.map === 'void' ? { x: 190, y: 330 } : { x: 330, y: 500 };
+    const p2Spawn = this.settings.map === 'void' ? { x: 1090, y: 330 } : { x: 950, y: 500 };
+    this.p1 = new Fighter(this, p1Spawn.x, p1Spawn.y, p1Config, 1, p1Config.color);
+    this.p2 = new Fighter(
+      this,
+      p2Spawn.x,
+      p2Spawn.y,
+      p2Config,
+      2,
+      same ? p2Config.alternateColor : p2Config.color,
+    );
     if (this.settings.map === 'meadow') {
       this.p1.setCollideWorldBounds(true);
       this.p2.setCollideWorldBounds(true);
     }
-    this.physics.add.collider(this.p1, this.platforms);
-    this.physics.add.collider(this.p2, this.platforms);
+    if (this.settings.map === 'void') {
+      const oneWayPlatform: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (
+        fighterObject,
+        platformObject,
+      ) => {
+        const fighter = fighterObject as Fighter;
+        const platform = platformObject as Phaser.Types.Physics.Arcade.GameObjectWithBody;
+        const platformBody = platform.body as Phaser.Physics.Arcade.StaticBody;
+        const previousBottom = fighter.bodyRef.prev.y + fighter.bodyRef.height;
+        return fighter.bodyRef.velocity.y >= 0 && previousBottom <= platformBody.top + 14;
+      };
+      this.physics.add.collider(this.p1, this.platforms, undefined, oneWayPlatform);
+      this.physics.add.collider(this.p2, this.platforms, undefined, oneWayPlatform);
+    } else {
+      this.physics.add.collider(this.p1, this.platforms);
+      this.physics.add.collider(this.p2, this.platforms);
+    }
     this.physics.add.collider(this.p1, this.p2);
-    this.combat = new CombatSystem(this, (attacker, target) => this.onHit(attacker, target));
+    this.combat = new CombatSystem(
+      this,
+      (attacker, target, attack) => this.onHit(attacker, target, attack),
+    );
     this.hud = new FightHUD(this, this.p1, this.p2);
     this.debugGraphics = this.add.graphics().setDepth(80);
     this.debugText = this.add.text(18, 145, '', {
@@ -64,16 +97,23 @@ export class FightScene extends Phaser.Scene {
     }).setDepth(81).setVisible(false);
     this.wireFighterEvents(this.p1);
     this.wireFighterEvents(this.p2);
-    this.input.keyboard?.on('keydown-F2', () => {
+    this.debugHandler = () => {
       this.debugVisible = !this.debugVisible;
       this.debugText.setVisible(this.debugVisible);
       if (!this.debugVisible) this.debugGraphics.clear();
+    };
+    this.escapeHandler = () => this.togglePause();
+    this.input.keyboard?.on('keydown-F2', this.debugHandler);
+    this.input.keyboard?.on('keydown-ESC', this.escapeHandler);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.debugHandler) this.input.keyboard?.off('keydown-F2', this.debugHandler);
+      if (this.escapeHandler) this.input.keyboard?.off('keydown-ESC', this.escapeHandler);
     });
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.removeAllListeners());
     this.startCountdown();
   }
 
   update(time: number, delta: number): void {
+    if (this.isPaused) return;
     const p1Move = {
       left: this.inputs.p1.left.isDown,
       right: this.inputs.p1.right.isDown,
@@ -99,6 +139,71 @@ export class FightScene extends Phaser.Scene {
     if (result && !this.roundEnding) this.finishRound(result);
     this.hud.update(this.p1, this.p2, this.rounds, time);
     if (this.debugVisible) this.drawDebug();
+  }
+
+  private togglePause(): void {
+    if (this.roundEnding) return;
+    if (this.isPaused) {
+      this.resumeFight();
+      return;
+    }
+    this.isPaused = true;
+    this.controlsBeforePause = [this.p1.controlEnabled, this.p2.controlEnabled];
+    this.p1.controlEnabled = false;
+    this.p2.controlEnabled = false;
+    this.physics.world.pause();
+    this.time.paused = true;
+    this.tweens.pauseAll();
+
+    const shade = this.add.rectangle(640, 360, 1280, 720, 0x03050d, 0.82).setDepth(200);
+    const panel = this.add.rectangle(640, 350, 650, 520, 0x0b1127, 0.99)
+      .setStrokeStyle(4, palette.cyan, 0.95).setDepth(201);
+    const topBand = this.add.rectangle(640, 115, 646, 46, palette.blue, 0.95).setDepth(202);
+    const title = this.add.text(640, 176, 'PAUSED', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '54px', color: '#ffffff',
+      stroke: '#091027', strokeThickness: 8,
+    }).setOrigin(0.5).setDepth(202);
+    const subtitle = this.add.text(640, 224, 'ESC를 다시 누르면 전투로 돌아갑니다', {
+      fontSize: '17px', color: '#aebee8',
+    }).setOrigin(0.5).setDepth(202);
+    const resume = addButton(this, 640, 300, '계속하기', () => this.resumeFight(), 390).setDepth(203);
+    const restart = addButton(this, 640, 380, '현재 라운드 다시 시작', () => {
+      this.restoreRuntime();
+      this.registry.set('resumeRounds', {
+        round: this.rounds.round,
+        p1Wins: this.rounds.p1Wins,
+        p2Wins: this.rounds.p2Wins,
+        history: [...this.rounds.history],
+      });
+      this.scene.restart();
+    }, 390).setDepth(203);
+    const select = addButton(this, 640, 460, '파이터 선택으로', () => {
+      this.restoreRuntime();
+      this.registry.remove('resumeRounds');
+      this.scene.start('CharacterSelectScene');
+    }, 390).setDepth(203);
+    const menu = addButton(this, 640, 540, '메인 메뉴로', () => {
+      this.restoreRuntime();
+      this.registry.remove('resumeRounds');
+      this.scene.start('TitleScene');
+    }, 390).setDepth(203);
+    this.pauseObjects = [shade, panel, topBand, title, subtitle, resume, restart, select, menu];
+  }
+
+  private resumeFight(): void {
+    this.restoreRuntime();
+    this.pauseObjects.forEach((object) => object.destroy());
+    this.pauseObjects = [];
+    this.isPaused = false;
+    this.p1.controlEnabled = this.controlsBeforePause[0] && !this.roundEnding;
+    this.p2.controlEnabled = this.controlsBeforePause[1] && !this.roundEnding;
+    this.input.keyboard?.resetKeys();
+  }
+
+  private restoreRuntime(): void {
+    this.time.paused = false;
+    this.tweens.resumeAll();
+    this.physics.world.resume();
   }
 
   private handleAttackInput(
@@ -129,9 +234,7 @@ export class FightScene extends Phaser.Scene {
     });
   }
 
-  private onHit(attacker: Fighter, target: Fighter): void {
-    const attack = attacker.currentAttack;
-    if (!attack) return;
+  private onHit(attacker: Fighter, target: Fighter, attack: ActiveAttack): void {
     this.sounds.play('hit');
     this.cameras.main.shake(attack.config.hitstopMs + 25, attack.kind === 'ultimate' ? 0.008 : 0.0035);
     this.combat.showHitEffect(target.x, target.y - 48, attacker.fighterConfig.color);
@@ -150,6 +253,7 @@ export class FightScene extends Phaser.Scene {
             this.time.now,
             attacker,
             final ? 260 : 180,
+            'ultimate',
           );
           if (hit) {
             this.damageNumber(target.x, target.y - 105, 10);
@@ -192,13 +296,96 @@ export class FightScene extends Phaser.Scene {
       ).setStrokeStyle(kind === 'ultimate' ? 13 : 7, 0xffffff, 0.72).setDepth(15);
       arc.setScale(fighter.facing, 1);
       this.tweens.add({ targets: arc, alpha: 0, scaleX: fighter.facing * 1.35, duration: 190, onComplete: () => arc.destroy() });
-    } else {
+      return;
+    }
+    if (fighter.fighterConfig.id === 'fist') {
       const fist = this.add.circle(
         fighter.x + fighter.facing * 58, fighter.y - (kind === 'skill' ? 88 : 50),
         kind === 'ultimate' ? 40 : 27, color, 0.75,
       ).setStrokeStyle(5, 0xffffff, 0.7).setDepth(15);
       this.tweens.add({ targets: fist, scale: 1.7, alpha: 0, duration: 170, onComplete: () => fist.destroy() });
+      return;
     }
+    if (fighter.fighterConfig.id === 'minigun') {
+      const count = kind === 'ultimate' ? 9 : kind === 'skill' ? 6 : 3;
+      for (let index = 0; index < count; index += 1) {
+        const bullet = this.add.rectangle(
+          fighter.x + fighter.facing * (70 + index * 34),
+          fighter.y - 53 + (index % 2) * 8,
+          kind === 'ultimate' ? 30 : 20,
+          7,
+          index % 2 ? 0xffffff : color,
+          0.9,
+        ).setDepth(16);
+        this.tweens.add({
+          targets: bullet,
+          x: bullet.x + fighter.facing * 95,
+          alpha: 0,
+          duration: 150 + index * 12,
+          onComplete: () => bullet.destroy(),
+        });
+      }
+      return;
+    }
+    if (fighter.fighterConfig.id === 'clock') {
+      const ring = this.add.circle(
+        fighter.x + fighter.facing * 80,
+        fighter.y - 55,
+        kind === 'ultimate' ? 120 : kind === 'skill' ? 72 : 40,
+        color,
+        0.16,
+      ).setStrokeStyle(kind === 'ultimate' ? 10 : 6, color, 0.9).setDepth(16);
+      const hand = this.add.rectangle(ring.x, ring.y, ring.radius * 1.45, 6, 0xffffff, 0.85)
+        .setOrigin(0, 0.5).setRotation(-0.7).setDepth(17);
+      this.tweens.add({
+        targets: [ring, hand],
+        rotation: 1.7,
+        scale: 1.35,
+        alpha: 0,
+        duration: 260,
+        onComplete: () => { ring.destroy(); hand.destroy(); },
+      });
+      return;
+    }
+    if (fighter.fighterConfig.id === 'plant') {
+      const count = kind === 'ultimate' ? 7 : kind === 'skill' ? 4 : 2;
+      for (let index = 0; index < count; index += 1) {
+        const leaf = this.add.ellipse(
+          fighter.x + fighter.facing * (58 + index * 34),
+          fighter.y - 35 - (index % 3) * 24,
+          34,
+          18,
+          index % 2 ? 0xbaff79 : color,
+          0.85,
+        ).setRotation(fighter.facing * (0.4 + index * 0.12)).setDepth(16);
+        this.tweens.add({
+          targets: leaf,
+          y: leaf.y - 45,
+          angle: leaf.angle + fighter.facing * 80,
+          alpha: 0,
+          duration: 230 + index * 25,
+          onComplete: () => leaf.destroy(),
+        });
+      }
+      return;
+    }
+    const size = kind === 'ultimate' ? 76 : kind === 'skill' ? 52 : 34;
+    const rock = this.add.polygon(
+      fighter.x + fighter.facing * 68,
+      fighter.y - 53,
+      [0, -size / 2, size * 0.46, -size * 0.2, size / 2, size * 0.3, 0, size / 2, -size * 0.5, size * 0.2],
+      color,
+      0.9,
+    ).setStrokeStyle(5, 0xffffff, 0.5).setDepth(16);
+    this.tweens.add({
+      targets: rock,
+      x: rock.x + fighter.facing * (kind === 'ultimate' ? 180 : 75),
+      rotation: fighter.facing * 1.2,
+      scale: 1.3,
+      alpha: 0,
+      duration: 230,
+      onComplete: () => rock.destroy(),
+    });
   }
 
   private ultimateIntro(fighter: Fighter): void {
@@ -320,10 +507,16 @@ export class FightScene extends Phaser.Scene {
       stars.fillCircle(Phaser.Math.Between(0, 1280), Phaser.Math.Between(110, 650), Phaser.Math.Between(1, 3));
     }
     this.platforms = this.physics.add.staticGroup();
-    this.addPlatform(640, 570, 670, 44, 0x6649a6);
-    this.addPlatform(230, 430, 260, 32, 0x4e397f);
-    this.addPlatform(1050, 390, 260, 32, 0x4e397f);
-    this.physics.world.setBounds(-200, 0, 1680, 1000);
+    this.addPlatform(640, 245, 650, 38, 0x6c66a8);
+    this.addPlatform(190, 390, 250, 32, 0x4a4985);
+    this.addPlatform(1090, 390, 250, 32, 0x4a4985);
+    this.addPlatform(640, 485, 330, 34, 0x585393);
+    this.addPlatform(250, 600, 270, 30, 0x403d73);
+    this.addPlatform(1030, 600, 270, 30, 0x403d73);
+    this.add.rectangle(640, 355, 64, 5, 0x75e8ff, 0.25);
+    this.add.rectangle(430, 530, 86, 4, 0xb499ff, 0.22).setRotation(-0.12);
+    this.add.rectangle(850, 530, 86, 4, 0xb499ff, 0.22).setRotation(0.12);
+    this.physics.world.setBounds(-220, 0, 1720, 900);
   }
 
   private addPlatform(x: number, y: number, width: number, height: number, tint: number): void {

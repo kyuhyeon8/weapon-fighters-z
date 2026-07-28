@@ -16,8 +16,8 @@ export const maps: Record<MapId, MapConfig> = {
   },
   void: {
     id: 'void',
-    name: '공허의 발판',
-    description: '발판 아래로 추락하면 피해 15 후 중앙에서 부활.',
+    name: '공허의 다층 발판',
+    description: '높낮이가 다른 6개 발판. 추락하면 피해 15 후 상단에서 복귀.',
     color: 0x9a6bff,
   },
 };

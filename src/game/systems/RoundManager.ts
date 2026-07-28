@@ -13,6 +13,9 @@ export class RoundManager {
 
   record(result: RoundResult): { matchOver: boolean; winner: RoundResult | null } {
     this.history.push(result);
+    if (result === 'draw') {
+      return { matchOver: true, winner: 'draw' };
+    }
     if (result === 'p1') this.p1Wins += 1;
     if (result === 'p2') this.p2Wins += 1;
 

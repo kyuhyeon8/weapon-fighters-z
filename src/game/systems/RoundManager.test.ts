@@ -10,15 +10,14 @@ describe('RoundManager', () => {
   it('awards a best-of-three match at two wins', () => {
     const rounds = new RoundManager('bestOf3');
     expect(rounds.record('p1').matchOver).toBe(false);
-    expect(rounds.record('draw').matchOver).toBe(false);
     expect(rounds.record('p1')).toEqual({ matchOver: true, winner: 'p1' });
     expect(rounds.p1Wins).toBe(2);
     expect(rounds.p2Wins).toBe(0);
   });
 
-  it('does not award a win for a draw round', () => {
+  it('ends the entire match as a draw after a simultaneous KO', () => {
     const rounds = new RoundManager('bestOf3');
-    rounds.record('draw');
-    expect([rounds.p1Wins, rounds.p2Wins, rounds.round]).toEqual([0, 0, 2]);
+    expect(rounds.record('draw')).toEqual({ matchOver: true, winner: 'draw' });
+    expect([rounds.p1Wins, rounds.p2Wins, rounds.round]).toEqual([0, 0, 1]);
   });
 });
