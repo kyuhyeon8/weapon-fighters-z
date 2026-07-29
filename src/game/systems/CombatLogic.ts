@@ -1,4 +1,5 @@
 import type { RoundResult } from '../data/types';
+import { combatTuning } from '../config/combatTuning';
 
 export interface CombatantStats {
   health: number;
@@ -50,5 +51,5 @@ export function determineRoundResult(p1Health: number, p2Health: number): RoundR
 }
 
 export function applyVoidFall(stats: CombatantStats): CombatantStats {
-  return applyDamage(stats, 15);
+  return applyDamage(stats, combatTuning.voidFallDamage);
 }

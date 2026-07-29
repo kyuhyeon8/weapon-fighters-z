@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Fighter } from '../entities/Fighter';
 import { RoundManager } from '../systems/RoundManager';
+import { fontBody, fontDisplay, fontTech } from './ui';
 
 export class FightHUD {
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -21,28 +22,28 @@ export class FightHUD {
     scene.add.image(1223, 73, `fighter-${p2.fighterConfig.id}`)
       .setTint(p2.displayTint).setScale(0.48).setFlipX(true).setDepth(51);
     scene.add.text(110, 20, `1P  ${p1.fighterConfig.name}`, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '19px', color: '#ffffff',
+      fontFamily: fontDisplay, fontStyle: 'bold', fontSize: '17px', color: '#ffffff',
     }).setDepth(51);
     scene.add.text(1170, 20, `${p2.fighterConfig.name}  2P`, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '19px', color: '#ffffff',
+      fontFamily: fontDisplay, fontStyle: 'bold', fontSize: '17px', color: '#ffffff',
     }).setOrigin(1, 0).setDepth(51);
     this.center = scene.add.text(640, 24, '', {
-      fontSize: '20px', fontStyle: 'bold', color: '#ffffff', align: 'center',
+      fontFamily: fontTech, fontSize: '18px', fontStyle: 'bold', color: '#ffffff', align: 'center',
     }).setOrigin(0.5, 0).setDepth(51);
     this.p1Rage = scene.add.text(110, 105, '', {
-      fontSize: '15px', fontStyle: 'bold', color: '#ffbe4f',
+      fontFamily: fontBody, fontSize: '14px', fontStyle: 'bold', color: '#ffbe4f',
     }).setDepth(51);
     this.p2Rage = scene.add.text(1170, 105, '', {
-      fontSize: '15px', fontStyle: 'bold', color: '#ffbe4f',
+      fontFamily: fontBody, fontSize: '14px', fontStyle: 'bold', color: '#ffbe4f',
     }).setOrigin(1, 0).setDepth(51);
     this.p1Value = scene.add.text(118, 58, '', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#ffffff',
+      fontFamily: fontTech, fontStyle: 'bold', fontSize: '13px', color: '#ffffff',
     }).setDepth(52);
     this.p2Value = scene.add.text(1162, 58, '', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#ffffff',
+      fontFamily: fontTech, fontStyle: 'bold', fontSize: '13px', color: '#ffffff',
     }).setOrigin(1, 0).setDepth(52);
     scene.add.text(640, 104, 'ESC  PAUSE', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: '#8ca0d4',
+      fontFamily: fontTech, fontStyle: 'bold', fontSize: '11px', color: '#8ca0d4',
       backgroundColor: '#091022cc', padding: { x: 9, y: 5 },
     }).setOrigin(0.5, 0).setDepth(51);
   }
