@@ -29,4 +29,24 @@ describe('fighter roster', () => {
     expect(fighters.fist.skill).toMatchObject({ damage: 20, manaCost: 25 });
     expect(fighters.fist.ultimate.manaCost).toBe(60);
   });
+
+  it.each(Object.values(fighters))('$name uses identical combat data for 1P and 2P', (fighter) => {
+    const p1Config = fighter;
+    const p2Config = fighter;
+    expect(p1Config.maxHealth).toBe(p2Config.maxHealth);
+    expect(p1Config.moveSpeed).toBe(p2Config.moveSpeed);
+    expect(p1Config.jumpVelocity).toBe(p2Config.jumpVelocity);
+    expect(p1Config.basicAttack).toEqual(p2Config.basicAttack);
+    expect(p1Config.skill).toEqual(p2Config.skill);
+    expect(p1Config.ultimate).toEqual(p2Config.ultimate);
+  });
+
+  it('balances the minigun range with lower reward and longer recovery', () => {
+    expect(fighters.minigun.basicAttack.hitboxWidth)
+      .toBeGreaterThan(fighters.sword.basicAttack.hitboxWidth);
+    expect(fighters.minigun.basicAttack.recoveryMs)
+      .toBeGreaterThan(fighters.sword.basicAttack.recoveryMs);
+    expect(fighters.minigun.skill.damage).toBeLessThan(fighters.sword.skill.damage);
+    expect(fighters.minigun.ultimate.damage).toBeLessThan(fighters.rock.ultimate.damage);
+  });
 });
