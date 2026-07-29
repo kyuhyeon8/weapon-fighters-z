@@ -137,6 +137,8 @@ describe('combat calculations', () => {
     expect(combatTuning.swordUltimateHitMs).toBeGreaterThan(
       combatTuning.swordUltimateTrailClearMs,
     );
+    expect(combatTuning.swordUltimateTrailWidth).toBe(6);
+    expect(combatTuning.swordUltimateTitleHoldMs).toBe(170 + 500);
   });
 
   it.each([0, Math.PI / 5, Math.PI / 2, Math.PI * 0.9, -Math.PI / 3])(

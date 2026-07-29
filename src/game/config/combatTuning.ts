@@ -32,6 +32,8 @@ export const combatTuning = {
   swordUltimatePointTravelMs: 220,
   swordUltimateTrailClearMs: 380,
   swordUltimateHitMs: 395,
+  swordUltimateTrailWidth: 6,
+  swordUltimateTitleHoldMs: 670,
   voidFallDamage: 15,
   voidRespawnInvulnerabilityMs: 1000,
 } as const;

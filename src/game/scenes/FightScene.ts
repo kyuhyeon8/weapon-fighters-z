@@ -33,6 +33,12 @@ interface SwordSurface {
   top: number;
 }
 
+interface SwordUltimateFreeze {
+  until: number;
+  p1: { x: number; y: number };
+  p2: { x: number; y: number };
+}
+
 export class FightScene extends Phaser.Scene {
   private settings!: MatchSettings;
   private p1!: Fighter;
@@ -55,6 +61,7 @@ export class FightScene extends Phaser.Scene {
   private escapeHandler?: () => void;
   private plantNodes: PlantNode[] = [];
   private swordTrailAt = new Map<number, number>();
+  private swordUltimateFreeze?: SwordUltimateFreeze;
 
   constructor() { super('FightScene'); }
 
@@ -65,6 +72,7 @@ export class FightScene extends Phaser.Scene {
     this.isPaused = false;
     this.debugVisible = false;
     this.swordTrailAt.clear();
+    this.swordUltimateFreeze = undefined;
     this.pauseObjects = [];
     this.controlsBeforePause = [false, false];
     this.countdown = undefined;
@@ -165,11 +173,22 @@ export class FightScene extends Phaser.Scene {
     };
     this.p1.updateFighter(time, delta, this.p2.x, p1Move);
     this.p2.updateFighter(time, delta, this.p1.x, p2Move);
+    const swordUltimateFrozen = Boolean(
+      this.swordUltimateFreeze && time < this.swordUltimateFreeze.until,
+    );
+    if (swordUltimateFrozen && this.swordUltimateFreeze) {
+      this.holdFighterAt(this.p1, this.swordUltimateFreeze.p1);
+      this.holdFighterAt(this.p2, this.swordUltimateFreeze.p2);
+    } else if (this.swordUltimateFreeze) {
+      this.swordUltimateFreeze = undefined;
+    }
     this.updateSwordSlamTrail(this.p1, time);
     this.updateSwordSlamTrail(this.p2, time);
 
-    this.handleAttackInput(this.p1, this.inputs.p1, time);
-    this.handleAttackInput(this.p2, this.inputs.p2, time);
+    if (!swordUltimateFrozen) {
+      this.handleAttackInput(this.p1, this.inputs.p1, time);
+      this.handleAttackInput(this.p2, this.inputs.p2, time);
+    }
     this.combat.update(time, [this.p1, this.p2]);
 
     if (this.settings.map === 'void') {
@@ -264,13 +283,15 @@ export class FightScene extends Phaser.Scene {
     fighter.on('jump', () => this.sounds.play('jump'));
     fighter.on('attack-start', (kind: AttackKind) => {
       this.sounds.play(kind === 'basic' ? 'attack' : kind === 'skill' ? 'skill' : 'ultimate');
-      if (kind === 'ultimate') this.ultimateIntro(fighter);
+      if (kind === 'ultimate') {
+        this.ultimateIntro(fighter);
+        if (fighter.fighterConfig.id === 'sword' && fighter.currentAttack) {
+          this.startSwordUltimateCut(fighter, fighter.currentAttack);
+        }
+      }
     });
     fighter.on('attack-active', (kind: AttackKind) => {
-      if (fighter.fighterConfig.id === 'sword' && kind === 'ultimate') {
-        const attack = fighter.currentAttack;
-        if (attack) this.startSwordUltimateCut(fighter, attack);
-      } else {
+      if (!(fighter.fighterConfig.id === 'sword' && kind === 'ultimate')) {
         this.attackVisual(fighter, kind);
       }
       if (fighter.fighterConfig.id === 'minigun' && kind === 'ultimate') this.spawnLaserBarrage(fighter);
@@ -809,6 +830,16 @@ export class FightScene extends Phaser.Scene {
 
   private startSwordUltimateCut(attacker: Fighter, attack: ActiveAttack): void {
     const target = attacker === this.p1 ? this.p2 : this.p1;
+    const freezeUntil = this.time.now + combatTuning.swordUltimateHitMs;
+    if (this.swordUltimateFreeze && this.time.now < this.swordUltimateFreeze.until) {
+      this.swordUltimateFreeze.until = Math.max(this.swordUltimateFreeze.until, freezeUntil);
+    } else {
+      this.swordUltimateFreeze = {
+        until: freezeUntil,
+        p1: { x: this.p1.x, y: this.p1.y },
+        p2: { x: this.p2.x, y: this.p2.y },
+      };
+    }
     const trails: Phaser.GameObjects.Graphics[] = [];
     const points: Phaser.GameObjects.Ellipse[] = [];
     let effectActive = true;
@@ -831,8 +862,8 @@ export class FightScene extends Phaser.Scene {
         );
         const point = this.add.ellipse(path.startX, path.startY, 13, 5, 0xffffff, 0.24)
           .setRotation(angle)
-          .setDepth(21);
-        const trail = this.add.graphics().setDepth(20);
+          .setDepth(43);
+        const trail = this.add.graphics().setDepth(42);
         points.push(point);
         trails.push(trail);
         this.tweens.add({
@@ -844,7 +875,7 @@ export class FightScene extends Phaser.Scene {
           onUpdate: () => {
             if (!effectActive || !trail.active || !point.active) return;
             trail.clear()
-              .lineStyle(3, 0xffffff, 0.76)
+              .lineStyle(combatTuning.swordUltimateTrailWidth, 0xffffff, 0.76)
               .lineBetween(path.startX, path.startY, point.x, point.y);
           },
           onComplete: () => point.destroy(),
@@ -932,13 +963,32 @@ export class FightScene extends Phaser.Scene {
   }
 
   private ultimateIntro(fighter: Fighter): void {
+    const swordUltimate = fighter.fighterConfig.id === 'sword';
     const shade = this.add.rectangle(640, 360, 1280, 720, 0x02030a, 0.72).setDepth(40);
-    const line = this.add.text(640, 338, fighter.fighterConfig.ultimate.name, {
+    const line = this.add.text(
+      640,
+      338,
+      swordUltimate ? '가루로 만들어 주지' : fighter.fighterConfig.ultimate.name,
+      {
       fontFamily: fontDisplay, fontStyle: 'bold', fontSize: '50px', color: '#ffffff',
       stroke: Phaser.Display.Color.IntegerToColor(fighter.fighterConfig.color).rgba,
       strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(41);
-    this.tweens.add({ targets: [shade, line], alpha: 0, delay: 170, duration: 240, onComplete: () => { shade.destroy(); line.destroy(); } });
+      },
+    ).setOrigin(0.5).setDepth(44);
+    this.tweens.add({
+      targets: [shade, line],
+      alpha: 0,
+      delay: swordUltimate ? combatTuning.swordUltimateTitleHoldMs : 170,
+      duration: 240,
+      onComplete: () => { shade.destroy(); line.destroy(); },
+    });
+  }
+
+  private holdFighterAt(fighter: Fighter, position: { x: number; y: number }): void {
+    const offsetX = position.x - fighter.x;
+    const offsetY = position.y - fighter.y;
+    fighter.setPosition(position.x, position.y).setVelocity(0, 0).setAcceleration(0, 0);
+    fighter.weapon.setPosition(fighter.weapon.x + offsetX, fighter.weapon.y + offsetY);
   }
 
   private rushVisual(target: Fighter, color: number): void {
