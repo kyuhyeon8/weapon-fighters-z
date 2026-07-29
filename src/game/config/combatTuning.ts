@@ -18,6 +18,11 @@ export const combatTuning = {
   jumpBufferMs: 140,
   attackBufferMs: 130,
   slowMoveScale: 0.78,
+  meadowGroundTop: 580,
+  meadowGroundHeight: 140,
+  swordSlamLaunchVelocity: -600,
+  swordSlamAscentGravityOffset: -750,
+  swordSlamDiveVelocity: 820,
   voidFallDamage: 15,
   voidRespawnInvulnerabilityMs: 1000,
 } as const;

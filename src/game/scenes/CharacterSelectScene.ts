@@ -25,6 +25,10 @@ export class CharacterSelectScene extends Phaser.Scene {
   private previewMoveBars!: Phaser.GameObjects.Graphics;
   private previewMoveRows: Phaser.GameObjects.Text[] = [];
   private previewMoveValues: Phaser.GameObjects.Text[] = [];
+  private p1RailAvatar!: Phaser.GameObjects.Image;
+  private p2RailAvatar!: Phaser.GameObjects.Image;
+  private p1RailName!: Phaser.GameObjects.Text;
+  private p2RailName!: Phaser.GameObjects.Text;
   private readonly cardFrames = new Map<FighterId, Phaser.GameObjects.Rectangle>();
   private readonly cardBadges = new Map<FighterId, Phaser.GameObjects.Text>();
   private keyboardHandler?: (event: KeyboardEvent) => void;
@@ -78,10 +82,14 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.add.text(1184, 151, '2P', {
       fontFamily: fontTech, fontStyle: 'bold', fontSize: '20px', color: '#ff8db4',
     }).setOrigin(1, 0.5);
-    this.add.text(220, 151, '선택 대기', {
+    this.p1RailAvatar = this.add.image(142, 151, 'fighter-sword')
+      .setScale(0.44).setVisible(false);
+    this.p2RailAvatar = this.add.image(1138, 151, 'fighter-fist')
+      .setScale(0.44).setFlipX(true).setVisible(false);
+    this.p1RailName = this.add.text(232, 151, '선택 대기', {
       fontFamily: fontBody, fontStyle: 'bold', fontSize: '14px', color: '#d6e8ff',
     }).setOrigin(0.5);
-    this.add.text(1060, 151, '선택 대기', {
+    this.p2RailName = this.add.text(1048, 151, '선택 대기', {
       fontFamily: fontBody, fontStyle: 'bold', fontSize: '14px', color: '#f4d6e2',
     }).setOrigin(0.5);
     this.status = this.add.text(640, 151, '1P가 파이터를 선택하세요', {
@@ -237,12 +245,16 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (this.selecting === 1) {
       this.p1 = id;
       this.selecting = 2;
+      this.p1RailAvatar.setTexture(`fighter-${id}`).setTint(fighters[id].color).setVisible(true);
+      this.p1RailName.setText(fighters[id].title);
       this.cardBadges.forEach((badge) => badge.setText('').setVisible(false));
       this.cardBadges.get(id)?.setText('1P').setVisible(true);
       this.cardFrames.get(id)?.setStrokeStyle(3, palette.cyan, 1);
       this.status.setText('2P가 파이터를 선택하세요').setColor('#ff9fbc');
       return;
     }
+    this.p2RailAvatar.setTexture(`fighter-${id}`).setTint(fighters[id].color).setVisible(true);
+    this.p2RailName.setText(fighters[id].title);
     this.cardBadges.get(id)?.setText(id === this.p1 ? '1P·2P' : '2P').setVisible(true);
     const settings = this.registry.get('settings') as MatchSettings;
     this.registry.set('settings', { ...settings, p1: this.p1, p2: id });

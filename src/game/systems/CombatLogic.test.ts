@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { combatTuning } from '../config/combatTuning';
 import {
   addRage,
   applyDamage,
@@ -95,7 +96,17 @@ describe('combat calculations', () => {
   it('switches the sword skill from ascent to dive at the apex or timeout', () => {
     expect(shouldSwordSlamDive(250, -320)).toBe(false);
     expect(shouldSwordSlamDive(250, -10)).toBe(true);
-    expect(shouldSwordSlamDive(420, -200)).toBe(true);
+    expect(shouldSwordSlamDive(649, -200)).toBe(false);
+    expect(shouldSwordSlamDive(650, -200)).toBe(true);
+  });
+
+  it('makes the sword slam rise higher while launching and diving more slowly', () => {
+    const ascentGravity = combatTuning.gravityY + combatTuning.swordSlamAscentGravityOffset;
+    const apexHeight = combatTuning.swordSlamLaunchVelocity ** 2 / (2 * ascentGravity);
+    expect(ascentGravity).toBeGreaterThan(0);
+    expect(apexHeight).toBeGreaterThanOrEqual(200);
+    expect(Math.abs(combatTuning.swordSlamLaunchVelocity)).toBeLessThan(760);
+    expect(combatTuning.swordSlamDiveVelocity).toBeLessThan(1080);
   });
 
   it('ends the sword skill only after touching ground or a platform', () => {
@@ -117,11 +128,11 @@ describe('combat calculations', () => {
   });
 
   it('rotates the sword through the five supplied slam poses', () => {
-    expect(swordSlamWeaponAngle(319, false)).toBe(-13);
-    expect(swordSlamWeaponAngle(345, false)).toBe(42);
-    expect(swordSlamWeaponAngle(370, false)).toBe(77);
-    expect(swordSlamWeaponAngle(395, false)).toBe(107);
-    expect(swordSlamWeaponAngle(420, false)).toBe(132);
+    expect(swordSlamWeaponAngle(539, false)).toBe(-13);
+    expect(swordSlamWeaponAngle(567.5, false)).toBe(42);
+    expect(swordSlamWeaponAngle(595, false)).toBe(77);
+    expect(swordSlamWeaponAngle(622.5, false)).toBe(107);
+    expect(swordSlamWeaponAngle(650, false)).toBe(132);
     expect(swordSlamWeaponAngle(300, true)).toBe(132);
   });
 });

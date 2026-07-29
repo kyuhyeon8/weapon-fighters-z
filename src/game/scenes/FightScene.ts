@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { combatTuning } from '../config/combatTuning';
 import { fighters } from '../data/fighters';
 import { voidPlatforms } from '../data/maps';
 import type { AttackKind, MatchSettings, RoundResult } from '../data/types';
@@ -563,7 +564,7 @@ export class FightScene extends Phaser.Scene {
         right: platform.x + platform.width / 2,
         top: platform.y - platform.height / 2,
       }))
-      : [{ left: 0, right: 1280, top: 540 }];
+      : [{ left: 0, right: 1280, top: combatTuning.meadowGroundTop }];
     return surfaces
       .filter((surface) => attacker.x >= surface.left && attacker.x <= surface.right)
       .sort((a, b) => Math.abs(a.top - feetY) - Math.abs(b.top - feetY))
@@ -978,15 +979,27 @@ export class FightScene extends Phaser.Scene {
         const x = 30 + index * 54;
         const height = 10 + (index % 4) * 5;
         g.lineStyle(2, index % 3 === 0 ? 0xb9ff8f : 0x74d891, 0.55)
-          .lineBetween(x, 544, x + (index % 2 ? 5 : -5), 544 - height);
+          .lineBetween(
+            x,
+            combatTuning.meadowGroundTop + 2,
+            x + (index % 2 ? 5 : -5),
+            combatTuning.meadowGroundTop + 2 - height,
+          );
       }
       this.platforms = this.physics.add.staticGroup();
-      const ground = this.platforms.create(640, 620, 'pixel') as Phaser.Physics.Arcade.Sprite;
-      ground.setDisplaySize(1280, 160).setTint(0x246847).refreshBody();
-      this.add.rectangle(640, 542, 1280, 10, 0x8dea83, 1);
-      this.add.rectangle(640, 550, 1280, 6, 0x3c9e66, 1);
+      const groundCenter = combatTuning.meadowGroundTop + combatTuning.meadowGroundHeight / 2;
+      const ground = this.platforms.create(640, groundCenter, 'pixel') as Phaser.Physics.Arcade.Sprite;
+      ground.setDisplaySize(1280, combatTuning.meadowGroundHeight).setTint(0x246847).refreshBody();
+      this.add.rectangle(640, combatTuning.meadowGroundTop + 2, 1280, 10, 0x8dea83, 1);
+      this.add.rectangle(640, combatTuning.meadowGroundTop + 10, 1280, 6, 0x3c9e66, 1);
       for (let x = 18; x < 1280; x += 52) {
-        this.add.polygon(x, 585, [0, -18, 20, -10, 26, 12, 5, 22, -15, 8], 0x1c573e, 0.34);
+        this.add.polygon(
+          x,
+          combatTuning.meadowGroundTop + 43,
+          [0, -18, 20, -10, 26, 12, 5, 22, -15, 8],
+          0x1c573e,
+          0.34,
+        );
       }
       this.physics.world.setBounds(24, 0, 1232, 720);
       return;
