@@ -809,8 +809,9 @@ export class FightScene extends Phaser.Scene {
 
   private startSwordUltimateCut(attacker: Fighter, attack: ActiveAttack): void {
     const target = attacker === this.p1 ? this.p2 : this.p1;
-    const trail = this.add.graphics().setDepth(20);
+    const trails: Phaser.GameObjects.Graphics[] = [];
     const points: Phaser.GameObjects.Ellipse[] = [];
+    let effectActive = true;
     const pointCount = Phaser.Math.Between(
       combatTuning.swordUltimateTrailMin,
       combatTuning.swordUltimateTrailMax,
@@ -818,7 +819,7 @@ export class FightScene extends Phaser.Scene {
 
     for (let index = 0; index < pointCount; index += 1) {
       this.time.delayedCall(index * combatTuning.swordUltimateTrailStaggerMs, () => {
-        if (!trail.active) return;
+        if (!effectActive) return;
         const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
         const path = screenCutPath(
           Phaser.Math.Between(240, 1040),
@@ -831,9 +832,9 @@ export class FightScene extends Phaser.Scene {
         const point = this.add.ellipse(path.startX, path.startY, 13, 5, 0xffffff, 0.24)
           .setRotation(angle)
           .setDepth(21);
+        const trail = this.add.graphics().setDepth(20);
         points.push(point);
-        let previousX = path.startX;
-        let previousY = path.startY;
+        trails.push(trail);
         this.tweens.add({
           targets: point,
           x: path.endX,
@@ -841,11 +842,10 @@ export class FightScene extends Phaser.Scene {
           duration: combatTuning.swordUltimatePointTravelMs,
           ease: 'Linear',
           onUpdate: () => {
-            if (!trail.active || !point.active) return;
-            trail.lineStyle(3, 0xffffff, 0.76)
-              .lineBetween(previousX, previousY, point.x, point.y);
-            previousX = point.x;
-            previousY = point.y;
+            if (!effectActive || !trail.active || !point.active) return;
+            trail.clear()
+              .lineStyle(3, 0xffffff, 0.76)
+              .lineBetween(path.startX, path.startY, point.x, point.y);
           },
           onComplete: () => point.destroy(),
         });
@@ -853,10 +853,13 @@ export class FightScene extends Phaser.Scene {
     }
 
     this.time.delayedCall(combatTuning.swordUltimateTrailClearMs, () => {
+      effectActive = false;
       points.forEach((point) => {
         if (point.active) point.destroy();
       });
-      if (trail.active) trail.destroy();
+      trails.forEach((trail) => {
+        if (trail.active) trail.destroy();
+      });
     });
 
     this.time.delayedCall(combatTuning.swordUltimateHitMs, () => {
