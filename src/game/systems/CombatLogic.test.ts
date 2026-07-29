@@ -6,6 +6,7 @@ import {
   canUseMana,
   consumeRage,
   determineRoundResult,
+  facingTowardOpponent,
   minigunBurstCount,
   punchRushDamage,
   regenerateMana,
@@ -106,5 +107,11 @@ describe('combat calculations', () => {
     expect(swordWavePositions(500, 200, 800, 1)).toEqual([362, 638]);
     expect(swordWavePositions(230, 200, 800, 1)).toEqual([368]);
     expect(swordWavePositions(500, 430, 570, 2)).toEqual([]);
+  });
+
+  it('faces every fighter toward the opponent without jitter at the same x', () => {
+    expect(facingTowardOpponent(200, 500, -1)).toBe(1);
+    expect(facingTowardOpponent(500, 200, 1)).toBe(-1);
+    expect(facingTowardOpponent(300, 300, -1)).toBe(-1);
   });
 });

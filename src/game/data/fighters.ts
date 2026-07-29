@@ -10,8 +10,8 @@ const shared = {
 export const fighters: Record<FighterId, FighterConfig> = {
   sword: {
     id: 'sword',
-    name: '고대 선사의 귀환',
-    title: '고대 선사의 귀환',
+    name: '고대 전사의 귀환',
+    title: '고대 전사의 귀환',
     role: '밸런스 · 연속 베기',
     style: '빠른 베기와 중거리 견제',
     color: 0x63d8ff,

@@ -573,18 +573,23 @@ export class FightScene extends Phaser.Scene {
   private createSwordBlade(x: number, surfaceTop: number, color: number): void {
     const blade = this.add.polygon(
       x,
-      surfaceTop + 3,
+      surfaceTop + 12,
       [0, -96, 17, -75, 14, 0, -14, 0, -17, -75],
       0xdfe5ef,
       0.98,
     ).setStrokeStyle(4, 0x090d18, 1).setDepth(16).setScale(1, 0.08);
     const highlight = this.add.polygon(
       x - 4,
-      surfaceTop - 2,
+      surfaceTop + 7,
       [0, -86, 7, -70, 5, -5, -5, -5, -7, -70],
       0xffffff,
       0.76,
     ).setDepth(17).setScale(1, 0.08);
+    const maskSource = this.make.graphics({ x: 0, y: 0 });
+    maskSource.fillStyle(0xffffff).fillRect(x - 30, surfaceTop - 112, 60, 112);
+    const groundMask = maskSource.createGeometryMask();
+    blade.setMask(groundMask);
+    highlight.setMask(groundMask);
     const glow = this.add.ellipse(x, surfaceTop, 38, 10, color, 0.68).setDepth(15);
     this.tweens.add({
       targets: [blade, highlight],
@@ -602,6 +607,8 @@ export class FightScene extends Phaser.Scene {
         blade.destroy();
         highlight.destroy();
         glow.destroy();
+        groundMask.destroy();
+        maskSource.destroy();
       },
     });
   }

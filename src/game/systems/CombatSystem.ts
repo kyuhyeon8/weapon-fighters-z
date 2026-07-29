@@ -25,8 +25,9 @@ export class CombatSystem {
   }
 
   private intersects(attacker: Fighter, target: Fighter): boolean {
-    const hitbox = attacker.getHitbox();
-    return Boolean(hitbox && Phaser.Geom.Intersects.RectangleToRectangle(hitbox, target.getHurtbox()));
+    const weaponHitbox = attacker.getWeaponHitbox();
+    return Boolean(weaponHitbox
+      && Phaser.Geom.Intersects.RectangleToRectangle(weaponHitbox, target.getBodyHurtbox()));
   }
 
   showHitEffect(x: number, y: number, color: number): void {

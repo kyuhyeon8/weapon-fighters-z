@@ -6,6 +6,7 @@ import {
   applyDamage,
   canUseMana,
   consumeRage,
+  facingTowardOpponent,
   punchRushDamage,
   regenerateMana,
   shouldSwordSlamDive,
@@ -86,9 +87,11 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     };
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setName(`fighter-body-${playerNumber}`);
     this.weapon = scene.add.image(x, y - 22, `weapon-${config.id}`)
       .setOrigin(0.12, 0.5)
       .setTint(tint)
+      .setName(`fighter-weapon-${playerNumber}`)
       .setDepth(11);
     this.setTint(tint);
     this.setOrigin(0.5, 1);
@@ -176,8 +179,9 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       this.bodyRef.setAllowGravity(true);
     }
 
-    if (!this.currentAttack && this.state !== 'HITSTUN' && this.state !== 'STUN') {
-      this.facing = opponentX >= this.x ? 1 : -1;
+    if (this.state !== 'HITSTUN' && this.state !== 'STUN') {
+      this.facing = facingTowardOpponent(this.x, opponentX, this.facing);
+      if (this.currentAttack) this.currentAttack.direction = this.facing;
     }
     this.setFlipX(this.facing < 0);
 
@@ -398,7 +402,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  getHitbox(): Phaser.Geom.Rectangle | null {
+  getWeaponHitbox(): Phaser.Geom.Rectangle | null {
     const attack = this.currentAttack;
     if (!attack || attack.phase !== 'active') return null;
     const { config, direction } = attack;
@@ -413,8 +417,16 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     );
   }
 
-  getHurtbox(): Phaser.Geom.Rectangle {
+  getBodyHurtbox(): Phaser.Geom.Rectangle {
     return new Phaser.Geom.Rectangle(this.x - 20, this.y - 40, 40, 40);
+  }
+
+  getHitbox(): Phaser.Geom.Rectangle | null {
+    return this.getWeaponHitbox();
+  }
+
+  getHurtbox(): Phaser.Geom.Rectangle {
+    return this.getBodyHurtbox();
   }
 
   receiveHit(attacker: Fighter, now: number): boolean {
@@ -525,7 +537,8 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
 
   private updatePose(): void {
     this.setAngle(0);
-    if (this.currentAttack?.phase === 'startup') this.setScale(0.92, 1.06);
+    if (this.currentAttack?.config.id === 'sword-slam') this.setScale(1);
+    else if (this.currentAttack?.phase === 'startup') this.setScale(0.92, 1.06);
     else if (this.currentAttack?.phase === 'active') this.setScale(1.18, 0.94);
     else this.setScale(1);
   }
@@ -556,7 +569,13 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (this.currentAttack) {
       const phase = this.currentAttack.phase;
       if (this.currentAttack.config.id === 'sword-slam') {
-        angle = phase === 'active' ? 120 : -82;
+        const turnProgress = Phaser.Math.Clamp(
+          (this.scene.time.now - this.currentAttack.startedAt - 290) / 130,
+          0,
+          1,
+        );
+        const easedTurn = turnProgress * turnProgress * (3 - 2 * turnProgress);
+        angle = phase === 'active' ? 120 : Phaser.Math.Linear(-82, 120, easedTurn);
         reach = phase === 'active' ? 0 : 2;
         vertical = phase === 'active' ? -5 : -28;
         weaponScale = phase === 'active' ? 1.08 : 0.94;

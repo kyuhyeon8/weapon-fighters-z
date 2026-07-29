@@ -84,3 +84,12 @@ export function swordWavePositions(
   return [originX - distance, originX + distance]
     .filter((x) => x >= surfaceLeft + edgePadding && x <= surfaceRight - edgePadding);
 }
+
+export function facingTowardOpponent(
+  fighterX: number,
+  opponentX: number,
+  currentFacing: -1 | 1,
+): -1 | 1 {
+  if (opponentX === fighterX) return currentFacing;
+  return opponentX > fighterX ? 1 : -1;
+}
