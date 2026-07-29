@@ -429,6 +429,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     const attack = this.currentAttack;
     if (!attack || attack.phase !== 'active') return null;
     const { config, direction } = attack;
+    if (config.id === 'sword-screen-slash') return null;
     if (config.damage <= 0) return null;
     const centerX = this.x + config.hitboxOffsetX * direction;
     const centerY = this.y - 24 + config.hitboxOffsetY;

@@ -103,3 +103,41 @@ export function swordSlamWeaponAngle(elapsedMs: number, descending: boolean): nu
   const frameProgress = scaled - frame;
   return keyframes[frame] + (keyframes[frame + 1] - keyframes[frame]) * frameProgress;
 }
+
+export function screenCutPath(
+  centerX: number,
+  centerY: number,
+  angle: number,
+  width: number,
+  height: number,
+  inset: number,
+): { startX: number; startY: number; endX: number; endY: number } {
+  const directionX = Math.cos(angle);
+  const directionY = Math.sin(angle);
+  const candidates: number[] = [];
+  if (Math.abs(directionX) > 0.0001) {
+    candidates.push((inset - centerX) / directionX);
+    candidates.push((width - inset - centerX) / directionX);
+  }
+  if (Math.abs(directionY) > 0.0001) {
+    candidates.push((inset - centerY) / directionY);
+    candidates.push((height - inset - centerY) / directionY);
+  }
+  const valid = candidates
+    .map((distance) => ({
+      distance,
+      x: centerX + directionX * distance,
+      y: centerY + directionY * distance,
+    }))
+    .filter((point) => point.x >= inset - 0.01 && point.x <= width - inset + 0.01
+      && point.y >= inset - 0.01 && point.y <= height - inset + 0.01)
+    .sort((a, b) => a.distance - b.distance);
+  const start = valid[0];
+  const end = valid[valid.length - 1];
+  return {
+    startX: start.x,
+    startY: start.y,
+    endX: end.x,
+    endY: end.y,
+  };
+}

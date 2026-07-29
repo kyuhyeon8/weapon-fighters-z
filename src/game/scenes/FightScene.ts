@@ -8,6 +8,7 @@ import { CombatSystem } from '../systems/CombatSystem';
 import {
   determineRoundResult,
   minigunBurstCount,
+  screenCutPath,
   swordWavePositions,
 } from '../systems/CombatLogic';
 import { InputController } from '../systems/InputController';
@@ -266,7 +267,12 @@ export class FightScene extends Phaser.Scene {
       if (kind === 'ultimate') this.ultimateIntro(fighter);
     });
     fighter.on('attack-active', (kind: AttackKind) => {
-      this.attackVisual(fighter, kind);
+      if (fighter.fighterConfig.id === 'sword' && kind === 'ultimate') {
+        const attack = fighter.currentAttack;
+        if (attack) this.startSwordUltimateCut(fighter, attack);
+      } else {
+        this.attackVisual(fighter, kind);
+      }
       if (fighter.fighterConfig.id === 'minigun' && kind === 'ultimate') this.spawnLaserBarrage(fighter);
       if (fighter.fighterConfig.id === 'clock' && kind === 'ultimate') this.startTimeStop(fighter);
       if (fighter.fighterConfig.id === 'plant' && kind === 'basic') this.waterSeeds(fighter);
@@ -324,7 +330,6 @@ export class FightScene extends Phaser.Scene {
           );
           if (hit) {
             this.damageNumber(target.x, target.y - 82, target.lastDamageTaken);
-            this.slashLine(target.x, target.y - 50, attacker.fighterConfig.color, index);
             if (final) this.cameras.main.shake(150, 0.012);
           }
         });
@@ -802,6 +807,77 @@ export class FightScene extends Phaser.Scene {
     });
   }
 
+  private startSwordUltimateCut(attacker: Fighter, attack: ActiveAttack): void {
+    const target = attacker === this.p1 ? this.p2 : this.p1;
+    const trail = this.add.graphics().setDepth(20);
+    const points: Phaser.GameObjects.Ellipse[] = [];
+    const pointCount = Phaser.Math.Between(
+      combatTuning.swordUltimateTrailMin,
+      combatTuning.swordUltimateTrailMax,
+    );
+
+    for (let index = 0; index < pointCount; index += 1) {
+      this.time.delayedCall(index * combatTuning.swordUltimateTrailStaggerMs, () => {
+        if (!trail.active) return;
+        const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
+        const path = screenCutPath(
+          Phaser.Math.Between(240, 1040),
+          Phaser.Math.Between(150, 570),
+          angle,
+          1280,
+          720,
+          28,
+        );
+        const point = this.add.ellipse(path.startX, path.startY, 13, 5, 0xffffff, 0.24)
+          .setRotation(angle)
+          .setDepth(21);
+        points.push(point);
+        let previousX = path.startX;
+        let previousY = path.startY;
+        this.tweens.add({
+          targets: point,
+          x: path.endX,
+          y: path.endY,
+          duration: combatTuning.swordUltimatePointTravelMs,
+          ease: 'Linear',
+          onUpdate: () => {
+            if (!trail.active || !point.active) return;
+            trail.lineStyle(3, 0xffffff, 0.76)
+              .lineBetween(previousX, previousY, point.x, point.y);
+            previousX = point.x;
+            previousY = point.y;
+          },
+          onComplete: () => point.destroy(),
+        });
+      });
+    }
+
+    this.time.delayedCall(combatTuning.swordUltimateTrailClearMs, () => {
+      points.forEach((point) => {
+        if (point.active) point.destroy();
+      });
+      if (trail.active) trail.destroy();
+    });
+
+    this.time.delayedCall(combatTuning.swordUltimateHitMs, () => {
+      const liveAttack = attacker.currentAttack;
+      if (!liveAttack || liveAttack.id !== attack.id || liveAttack.phase !== 'active') return;
+      const { config, direction } = attack;
+      const centerX = attacker.x + config.hitboxOffsetX * direction;
+      const centerY = attacker.y - 24 + config.hitboxOffsetY;
+      const hitbox = new Phaser.Geom.Rectangle(
+        centerX - config.hitboxWidth / 2,
+        centerY - config.hitboxHeight / 2,
+        config.hitboxWidth,
+        config.hitboxHeight,
+      );
+      if (Phaser.Geom.Intersects.RectangleToRectangle(hitbox, target.getBodyHurtbox())
+        && target.receiveAttackSnapshot(attacker, attack, this.time.now)) {
+        this.onHit(attacker, target, attack);
+      }
+    });
+  }
+
   private weaponTrail(fighter: Fighter, kind: AttackKind): void {
     const color = fighter.fighterConfig.color;
     const strength = kind === 'ultimate' ? 1.45 : kind === 'skill' ? 1.2 : 1;
@@ -873,12 +949,6 @@ export class FightScene extends Phaser.Scene {
         this.tweens.add({ targets: burst, scale: 1.8, alpha: 0, duration: 150, onComplete: () => burst.destroy() });
       });
     }
-  }
-
-  private slashLine(x: number, y: number, color: number, index: number): void {
-    const line = this.add.rectangle(x, y, 150, 8, color, 0.85)
-      .setRotation(index % 2 === 0 ? -0.5 : 0.5).setDepth(21);
-    this.tweens.add({ targets: line, scaleX: 1.6, alpha: 0, duration: 130, onComplete: () => line.destroy() });
   }
 
   private damageNumber(x: number, y: number, damage: number): void {

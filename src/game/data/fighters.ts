@@ -33,7 +33,7 @@ export const fighters: Record<FighterId, FighterConfig> = {
     },
     ultimate: {
       id: 'sword-screen-slash', name: '화면 연속 베기', damage: 10, manaCost: 75,
-      startupMs: 340, activeMs: 260, recoveryMs: 620, hitstunMs: 900,
+      startupMs: 340, activeMs: 430, recoveryMs: 620, hitstunMs: 900,
       knockbackX: 420, knockbackY: -280, hitboxWidth: 560, hitboxHeight: 300,
       hitboxOffsetX: 240, hitboxOffsetY: -30, hitstopMs: 110, lungeVelocity: 55,
     },

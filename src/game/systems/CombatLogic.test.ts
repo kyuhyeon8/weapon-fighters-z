@@ -11,6 +11,7 @@ import {
   minigunBurstCount,
   punchRushDamage,
   regenerateMana,
+  screenCutPath,
   shouldApplyInterruptedTrade,
   shouldSwordSlamDive,
   shouldSwordSlamLand,
@@ -127,6 +128,31 @@ describe('combat calculations', () => {
       combatTuning.swordBladeWaveCount * combatTuning.swordBladeWaveStepMs,
     );
   });
+
+  it('clears every sword ultimate trail immediately before applying damage', () => {
+    const lastPointFinish = (combatTuning.swordUltimateTrailMax - 1)
+      * combatTuning.swordUltimateTrailStaggerMs
+      + combatTuning.swordUltimatePointTravelMs;
+    expect(combatTuning.swordUltimateTrailClearMs).toBeGreaterThan(lastPointFinish);
+    expect(combatTuning.swordUltimateHitMs).toBeGreaterThan(
+      combatTuning.swordUltimateTrailClearMs,
+    );
+  });
+
+  it.each([0, Math.PI / 5, Math.PI / 2, Math.PI * 0.9, -Math.PI / 3])(
+    'keeps a straight sword-ultimate path inside the screen at angle %f',
+    (angle) => {
+      const path = screenCutPath(640, 360, angle, 1280, 720, 28);
+      [path.startX, path.endX].forEach((x) => {
+        expect(x).toBeGreaterThanOrEqual(27.99);
+        expect(x).toBeLessThanOrEqual(1252.01);
+      });
+      [path.startY, path.endY].forEach((y) => {
+        expect(y).toBeGreaterThanOrEqual(27.99);
+        expect(y).toBeLessThanOrEqual(692.01);
+      });
+    },
+  );
 
   it('faces every fighter toward the opponent without jitter at the same x', () => {
     expect(facingTowardOpponent(200, 500, -1)).toBe(1);
