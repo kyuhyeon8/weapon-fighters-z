@@ -117,10 +117,10 @@ describe('combat calculations', () => {
   });
 
   it('rotates the sword through the five supplied slam poses', () => {
-    expect(swordSlamWeaponAngle(120, false)).toBe(-13);
-    expect(swordSlamWeaponAngle(195, false)).toBe(42);
-    expect(swordSlamWeaponAngle(270, false)).toBe(77);
-    expect(swordSlamWeaponAngle(345, false)).toBe(107);
+    expect(swordSlamWeaponAngle(319, false)).toBe(-13);
+    expect(swordSlamWeaponAngle(345, false)).toBe(42);
+    expect(swordSlamWeaponAngle(370, false)).toBe(77);
+    expect(swordSlamWeaponAngle(395, false)).toBe(107);
     expect(swordSlamWeaponAngle(420, false)).toBe(132);
     expect(swordSlamWeaponAngle(300, true)).toBe(132);
   });

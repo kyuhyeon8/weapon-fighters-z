@@ -677,6 +677,7 @@ export class FightScene extends Phaser.Scene {
 
   private attackVisual(fighter: Fighter, kind: AttackKind): void {
     const color = fighter.fighterConfig.color;
+    if (fighter.fighterConfig.id === 'sword' && kind === 'skill') return;
     this.weaponTrail(fighter, kind);
     if (fighter.fighterConfig.id === 'sword') {
       const arc = this.add.arc(
