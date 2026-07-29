@@ -13,6 +13,7 @@ import {
   shouldSwordSlamDive,
   shouldSwordSlamLand,
   spendMana,
+  swordWavePositions,
   type CombatantStats,
 } from './CombatLogic';
 
@@ -99,5 +100,11 @@ describe('combat calculations', () => {
     expect(shouldSwordSlamLand(500, false)).toBe(false);
     expect(shouldSwordSlamLand(80, true)).toBe(false);
     expect(shouldSwordSlamLand(500, true)).toBe(true);
+  });
+
+  it('clips sword waves to the current floor or platform edges', () => {
+    expect(swordWavePositions(500, 200, 800, 1)).toEqual([362, 638]);
+    expect(swordWavePositions(230, 200, 800, 1)).toEqual([368]);
+    expect(swordWavePositions(500, 430, 570, 2)).toEqual([]);
   });
 });

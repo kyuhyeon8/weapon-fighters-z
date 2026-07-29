@@ -4,7 +4,11 @@ import { voidPlatforms } from '../data/maps';
 import type { AttackKind, MatchSettings, RoundResult } from '../data/types';
 import { Fighter, type ActiveAttack } from '../entities/Fighter';
 import { CombatSystem } from '../systems/CombatSystem';
-import { determineRoundResult, minigunBurstCount } from '../systems/CombatLogic';
+import {
+  determineRoundResult,
+  minigunBurstCount,
+  swordWavePositions,
+} from '../systems/CombatLogic';
 import { InputController } from '../systems/InputController';
 import { RoundManager } from '../systems/RoundManager';
 import { SoundSystem } from '../systems/SoundSystem';
@@ -19,6 +23,12 @@ interface PlantNode {
   grown: boolean;
   expiresAt: number;
   view: Phaser.GameObjects.Container;
+}
+
+interface SwordSurface {
+  left: number;
+  right: number;
+  top: number;
 }
 
 export class FightScene extends Phaser.Scene {
@@ -521,22 +531,78 @@ export class FightScene extends Phaser.Scene {
   }
 
   private spawnSwordShards(attacker: Fighter): void {
+    const surface = this.swordSurfaceAt(attacker);
+    if (!surface) return;
+    const target = attacker === this.p1 ? this.p2 : this.p1;
     [1, 2, 3].forEach((step) => {
-      this.time.delayedCall(step * 130, () => {
+      this.time.delayedCall(step * 115, () => {
         if (!attacker.active) return;
-        const x = attacker.x + attacker.facing * (90 + step * 75);
-        const y = this.settings.map === 'void' ? 503 : 561;
-        const shard = this.add.triangle(x, y, 0, 38, 18, 0, 36, 38, attacker.fighterConfig.color, 0.85)
-          .setDepth(8).setScale(attacker.facing, 1);
-        this.tweens.add({ targets: shard, y: y - 26, alpha: 0, duration: 280, onComplete: () => shard.destroy() });
-        const target = attacker === this.p1 ? this.p2 : this.p1;
-        const rect = new Phaser.Geom.Rectangle(x - 28, y - 75, 56, 80);
-        if (Phaser.Geom.Intersects.RectangleToRectangle(rect, target.getHurtbox())) {
-          if (target.receiveBonusHit(5, attacker.facing * 120, -90, this.time.now, attacker, 140)) {
+        const positions = swordWavePositions(attacker.x, surface.left, surface.right, step);
+        const hitAreas = positions.map((x) => {
+          this.createSwordBlade(x, surface.top, attacker.fighterConfig.color);
+          return new Phaser.Geom.Rectangle(x - 22, surface.top - 94, 44, 96);
+        });
+        if (hitAreas.some((area) => Phaser.Geom.Intersects.RectangleToRectangle(
+          area,
+          target.getHurtbox(),
+        ))) {
+          const direction = target.x >= attacker.x ? 1 : -1;
+          if (target.receiveBonusHit(5, direction * 120, -90, this.time.now, attacker, 140)) {
             this.damageNumber(target.x, target.y - 100, 5);
           }
         }
       });
+    });
+  }
+
+  private swordSurfaceAt(attacker: Fighter): SwordSurface | undefined {
+    const feetY = attacker.bodyRef.bottom;
+    const surfaces: SwordSurface[] = this.settings.map === 'void'
+      ? voidPlatforms.map((platform) => ({
+        left: platform.x - platform.width / 2,
+        right: platform.x + platform.width / 2,
+        top: platform.y - platform.height / 2,
+      }))
+      : [{ left: 0, right: 1280, top: 540 }];
+    return surfaces
+      .filter((surface) => attacker.x >= surface.left && attacker.x <= surface.right)
+      .sort((a, b) => Math.abs(a.top - feetY) - Math.abs(b.top - feetY))
+      .find((surface) => Math.abs(surface.top - feetY) <= 28);
+  }
+
+  private createSwordBlade(x: number, surfaceTop: number, color: number): void {
+    const blade = this.add.polygon(
+      x,
+      surfaceTop + 3,
+      [0, -96, 17, -75, 14, 0, -14, 0, -17, -75],
+      0xdfe5ef,
+      0.98,
+    ).setStrokeStyle(4, 0x090d18, 1).setDepth(16).setScale(1, 0.08);
+    const highlight = this.add.polygon(
+      x - 4,
+      surfaceTop - 2,
+      [0, -86, 7, -70, 5, -5, -5, -5, -7, -70],
+      0xffffff,
+      0.76,
+    ).setDepth(17).setScale(1, 0.08);
+    const glow = this.add.ellipse(x, surfaceTop, 38, 10, color, 0.68).setDepth(15);
+    this.tweens.add({
+      targets: [blade, highlight],
+      scaleY: 1,
+      duration: 125,
+      ease: 'Back.Out',
+    });
+    this.tweens.add({
+      targets: [blade, highlight, glow],
+      y: '-=8',
+      alpha: 0,
+      delay: 250,
+      duration: 230,
+      onComplete: () => {
+        blade.destroy();
+        highlight.destroy();
+        glow.destroy();
+      },
     });
   }
 

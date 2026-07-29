@@ -555,7 +555,12 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
 
     if (this.currentAttack) {
       const phase = this.currentAttack.phase;
-      if (phase === 'startup') {
+      if (this.currentAttack.config.id === 'sword-slam') {
+        angle = phase === 'active' ? 120 : -82;
+        reach = phase === 'active' ? 0 : 2;
+        vertical = phase === 'active' ? -5 : -28;
+        weaponScale = phase === 'active' ? 1.08 : 0.94;
+      } else if (phase === 'startup') {
         const windup = { sword: -112, fist: -48, minigun: -12, clock: -105, plant: -82, rock: -128 };
         angle = windup[id];
         reach = id === 'minigun' ? 4 : 1;
@@ -597,6 +602,6 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       .setAlpha(this.alpha)
       .setVisible(this.visible)
       .clearTint()
-      .setTint(this.displayTint);
+      .setTint(id === 'sword' ? 0xffffff : this.displayTint);
   }
 }

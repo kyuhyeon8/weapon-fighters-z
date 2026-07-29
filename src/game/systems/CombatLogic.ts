@@ -72,3 +72,15 @@ export function shouldSwordSlamDive(elapsedMs: number, verticalVelocity: number)
 export function shouldSwordSlamLand(elapsedMs: number, grounded: boolean): boolean {
   return elapsedMs >= 140 && grounded;
 }
+
+export function swordWavePositions(
+  originX: number,
+  surfaceLeft: number,
+  surfaceRight: number,
+  step: number,
+): number[] {
+  const distance = 64 + step * 74;
+  const edgePadding = 18;
+  return [originX - distance, originX + distance]
+    .filter((x) => x >= surfaceLeft + edgePadding && x <= surfaceRight - edgePadding);
+}

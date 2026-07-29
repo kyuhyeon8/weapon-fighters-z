@@ -78,14 +78,11 @@ export class BootScene extends Phaser.Scene {
     };
 
     if (id === 'sword') {
-      polygon([17, 34, 68, 6, 81, 7, 72, 18, 29, 39]);
-      polygon([31, 31, 68, 11, 63, 20, 37, 34], 0xffffff, Math.max(1, s(2)));
-      g.fillStyle(shade).fillRect(x(11), y(33), s(24), s(7));
-      g.lineStyle(Math.max(2, s(4)), outline).strokeRect(x(11), y(33), s(24), s(7));
-      g.fillStyle(dark).fillRoundedRect(x(5), y(40), s(18), s(8), s(3));
-      g.lineStyle(Math.max(2, s(3)), outline).strokeRoundedRect(x(5), y(40), s(18), s(8), s(3));
-      g.fillStyle(0xffffff).fillCircle(x(6), y(46), s(4));
-      g.lineStyle(Math.max(1, s(2)), outline).strokeCircle(x(6), y(46), s(4));
+      polygon([24, 35, 61, 4, 75, 5, 74, 17, 37, 42], 0xd9dde5);
+      polygon([31, 34, 62, 9, 68, 10, 36, 38], 0xf2f3f5, Math.max(1, s(2)));
+      polygon([61, 4, 75, 5, 74, 17, 66, 15], 0xaeb4c0, Math.max(1, s(2)));
+      polygon([17, 29, 40, 43, 34, 50, 11, 35], 0xa95708, Math.max(2, s(4)));
+      polygon([14, 41, 25, 48, 13, 55, 4, 48], 0x934500, Math.max(2, s(3)));
       return;
     }
     if (id === 'fist') {
