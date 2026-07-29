@@ -66,7 +66,7 @@ export function minigunBurstCount(sequence: number): 4 | 6 {
 }
 
 export function shouldSwordSlamDive(elapsedMs: number, verticalVelocity: number): boolean {
-  return elapsedMs >= 650 || verticalVelocity >= -20;
+  return elapsedMs >= 850 || verticalVelocity >= -20;
 }
 
 export function shouldSwordSlamLand(elapsedMs: number, grounded: boolean): boolean {
@@ -97,7 +97,7 @@ export function facingTowardOpponent(
 export function swordSlamWeaponAngle(elapsedMs: number, descending: boolean): number {
   if (descending) return 132;
   const keyframes = [-13, 42, 77, 107, 132] as const;
-  const progress = Math.max(0, Math.min(1, (elapsedMs - 540) / 110));
+  const progress = Math.max(0, Math.min(1, (elapsedMs - 740) / 110));
   const scaled = progress * (keyframes.length - 1);
   const frame = Math.min(keyframes.length - 2, Math.floor(scaled));
   const frameProgress = scaled - frame;

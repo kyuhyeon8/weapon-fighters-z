@@ -27,7 +27,7 @@ export const fighters: Record<FighterId, FighterConfig> = {
     },
     skill: {
       id: 'sword-slam', name: '내려찍기', damage: 20, manaCost: 30,
-      startupMs: 650, activeMs: 1000, recoveryMs: 0, hitstunMs: 330,
+      startupMs: 850, activeMs: 1000, recoveryMs: 0, hitstunMs: 330,
       knockbackX: 180, knockbackY: -250, hitboxWidth: 104, hitboxHeight: 124,
       hitboxOffsetX: 0, hitboxOffsetY: 46, hitstopMs: 70,
     },

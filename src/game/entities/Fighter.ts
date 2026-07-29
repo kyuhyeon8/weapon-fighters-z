@@ -582,7 +582,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       if (this.currentAttack.config.id === 'sword-slam') {
         const elapsed = this.scene.time.now - this.currentAttack.startedAt;
         const turnProgress = Phaser.Math.Clamp(
-          (elapsed - 540) / 110,
+          (elapsed - 740) / 110,
           0,
           1,
         );

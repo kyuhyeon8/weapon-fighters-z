@@ -21,7 +21,7 @@ export const combatTuning = {
   meadowGroundTop: 580,
   meadowGroundHeight: 140,
   swordSlamLaunchVelocity: -600,
-  swordSlamAscentGravityOffset: -750,
+  swordSlamAscentGravityOffset: -958,
   swordSlamDiveVelocity: 820,
   voidFallDamage: 15,
   voidRespawnInvulnerabilityMs: 1000,

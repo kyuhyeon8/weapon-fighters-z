@@ -96,15 +96,16 @@ describe('combat calculations', () => {
   it('switches the sword skill from ascent to dive at the apex or timeout', () => {
     expect(shouldSwordSlamDive(250, -320)).toBe(false);
     expect(shouldSwordSlamDive(250, -10)).toBe(true);
-    expect(shouldSwordSlamDive(649, -200)).toBe(false);
-    expect(shouldSwordSlamDive(650, -200)).toBe(true);
+    expect(shouldSwordSlamDive(849, -200)).toBe(false);
+    expect(shouldSwordSlamDive(850, -200)).toBe(true);
   });
 
   it('makes the sword slam rise higher while launching and diving more slowly', () => {
     const ascentGravity = combatTuning.gravityY + combatTuning.swordSlamAscentGravityOffset;
     const apexHeight = combatTuning.swordSlamLaunchVelocity ** 2 / (2 * ascentGravity);
     expect(ascentGravity).toBeGreaterThan(0);
-    expect(apexHeight).toBeGreaterThanOrEqual(200);
+    expect(apexHeight).toBeGreaterThanOrEqual(260);
+    expect(apexHeight).toBeLessThan(261);
     expect(Math.abs(combatTuning.swordSlamLaunchVelocity)).toBeLessThan(760);
     expect(combatTuning.swordSlamDiveVelocity).toBeLessThan(1080);
   });
@@ -128,11 +129,11 @@ describe('combat calculations', () => {
   });
 
   it('rotates the sword through the five supplied slam poses', () => {
-    expect(swordSlamWeaponAngle(539, false)).toBe(-13);
-    expect(swordSlamWeaponAngle(567.5, false)).toBe(42);
-    expect(swordSlamWeaponAngle(595, false)).toBe(77);
-    expect(swordSlamWeaponAngle(622.5, false)).toBe(107);
-    expect(swordSlamWeaponAngle(650, false)).toBe(132);
+    expect(swordSlamWeaponAngle(739, false)).toBe(-13);
+    expect(swordSlamWeaponAngle(767.5, false)).toBe(42);
+    expect(swordSlamWeaponAngle(795, false)).toBe(77);
+    expect(swordSlamWeaponAngle(822.5, false)).toBe(107);
+    expect(swordSlamWeaponAngle(850, false)).toBe(132);
     expect(swordSlamWeaponAngle(300, true)).toBe(132);
   });
 });
