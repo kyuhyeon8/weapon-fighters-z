@@ -7,6 +7,7 @@ import {
   canUseMana,
   consumeRage,
   determineRoundResult,
+  evenlySpacedCutAngle,
   facingTowardOpponent,
   minigunBurstCount,
   punchRushDamage,
@@ -130,15 +131,28 @@ describe('combat calculations', () => {
   });
 
   it('clears every sword ultimate trail immediately before applying damage', () => {
-    const lastPointFinish = (combatTuning.swordUltimateTrailMax - 1)
+    const lastPointFinish = (combatTuning.swordUltimateTrailCount - 1)
       * combatTuning.swordUltimateTrailStaggerMs
       + combatTuning.swordUltimatePointTravelMs;
     expect(combatTuning.swordUltimateTrailClearMs).toBeGreaterThan(lastPointFinish);
+    expect(combatTuning.swordUltimateTrailClearMs).toBeLessThan(1000);
     expect(combatTuning.swordUltimateHitMs).toBeGreaterThan(
       combatTuning.swordUltimateTrailClearMs,
     );
     expect(combatTuning.swordUltimateTrailWidth).toBe(6);
     expect(combatTuning.swordUltimateTitleHoldMs).toBe(170 + 500);
+  });
+
+  it('spreads eight sword-ultimate cuts evenly through every direction', () => {
+    const angles = Array.from(
+      { length: combatTuning.swordUltimateTrailCount },
+      (_, index) => evenlySpacedCutAngle(index, combatTuning.swordUltimateTrailCount, 0.37),
+    );
+    const expectedStep = Math.PI / 4;
+    expect(angles).toHaveLength(8);
+    angles.slice(1).forEach((angle, index) => {
+      expect(angle - angles[index]).toBeCloseTo(expectedStep, 8);
+    });
   });
 
   it.each([0, Math.PI / 5, Math.PI / 2, Math.PI * 0.9, -Math.PI / 3])(

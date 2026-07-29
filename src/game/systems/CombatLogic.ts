@@ -141,3 +141,11 @@ export function screenCutPath(
     endY: end.y,
   };
 }
+
+export function evenlySpacedCutAngle(
+  index: number,
+  count: number,
+  baseAngle: number,
+): number {
+  return baseAngle + index * (Math.PI * 2 / count);
+}

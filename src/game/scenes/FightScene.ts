@@ -7,6 +7,7 @@ import { Fighter, type ActiveAttack } from '../entities/Fighter';
 import { CombatSystem } from '../systems/CombatSystem';
 import {
   determineRoundResult,
+  evenlySpacedCutAngle,
   minigunBurstCount,
   screenCutPath,
   swordWavePositions,
@@ -843,15 +844,13 @@ export class FightScene extends Phaser.Scene {
     const trails: Phaser.GameObjects.Graphics[] = [];
     const points: Phaser.GameObjects.Ellipse[] = [];
     let effectActive = true;
-    const pointCount = Phaser.Math.Between(
-      combatTuning.swordUltimateTrailMin,
-      combatTuning.swordUltimateTrailMax,
-    );
+    const pointCount = combatTuning.swordUltimateTrailCount;
+    const baseAngle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
 
     for (let index = 0; index < pointCount; index += 1) {
       this.time.delayedCall(index * combatTuning.swordUltimateTrailStaggerMs, () => {
         if (!effectActive) return;
-        const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
+        const angle = evenlySpacedCutAngle(index, pointCount, baseAngle);
         const path = screenCutPath(
           Phaser.Math.Between(240, 1040),
           Phaser.Math.Between(150, 570),
