@@ -12,6 +12,7 @@ import {
   shouldSwordSlamDive,
   shouldSwordSlamLand,
   spendMana,
+  swordSlamWeaponAngle,
   type CombatantStats,
 } from '../systems/CombatLogic';
 
@@ -569,16 +570,16 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (this.currentAttack) {
       const phase = this.currentAttack.phase;
       if (this.currentAttack.config.id === 'sword-slam') {
+        const elapsed = this.scene.time.now - this.currentAttack.startedAt;
         const turnProgress = Phaser.Math.Clamp(
-          (this.scene.time.now - this.currentAttack.startedAt - 290) / 130,
+          (elapsed - 120) / 300,
           0,
           1,
         );
-        const easedTurn = turnProgress * turnProgress * (3 - 2 * turnProgress);
-        angle = phase === 'active' ? 132 : Phaser.Math.Linear(-82, 132, easedTurn);
-        reach = phase === 'active' ? 38 : 2;
-        vertical = -28;
-        weaponScale = phase === 'active' ? 1.05 : 0.94;
+        angle = swordSlamWeaponAngle(elapsed, phase === 'active');
+        reach = Phaser.Math.Linear(20, 38, turnProgress);
+        vertical = Phaser.Math.Linear(-24, -28, turnProgress);
+        weaponScale = Phaser.Math.Linear(0.96, 1.05, turnProgress);
       } else if (phase === 'startup') {
         const windup = { sword: -112, fist: -48, minigun: -12, clock: -105, plant: -82, rock: -128 };
         angle = windup[id];

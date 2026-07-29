@@ -14,6 +14,7 @@ import {
   shouldSwordSlamDive,
   shouldSwordSlamLand,
   spendMana,
+  swordSlamWeaponAngle,
   swordWavePositions,
   type CombatantStats,
 } from './CombatLogic';
@@ -113,5 +114,14 @@ describe('combat calculations', () => {
     expect(facingTowardOpponent(200, 500, -1)).toBe(1);
     expect(facingTowardOpponent(500, 200, 1)).toBe(-1);
     expect(facingTowardOpponent(300, 300, -1)).toBe(-1);
+  });
+
+  it('rotates the sword through the five supplied slam poses', () => {
+    expect(swordSlamWeaponAngle(120, false)).toBe(-13);
+    expect(swordSlamWeaponAngle(195, false)).toBe(42);
+    expect(swordSlamWeaponAngle(270, false)).toBe(77);
+    expect(swordSlamWeaponAngle(345, false)).toBe(107);
+    expect(swordSlamWeaponAngle(420, false)).toBe(132);
+    expect(swordSlamWeaponAngle(300, true)).toBe(132);
   });
 });

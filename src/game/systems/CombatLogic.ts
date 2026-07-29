@@ -93,3 +93,13 @@ export function facingTowardOpponent(
   if (opponentX === fighterX) return currentFacing;
   return opponentX > fighterX ? 1 : -1;
 }
+
+export function swordSlamWeaponAngle(elapsedMs: number, descending: boolean): number {
+  if (descending) return 132;
+  const keyframes = [-13, 42, 77, 107, 132] as const;
+  const progress = Math.max(0, Math.min(1, (elapsedMs - 120) / 300));
+  const scaled = progress * (keyframes.length - 1);
+  const frame = Math.min(keyframes.length - 2, Math.floor(scaled));
+  const frameProgress = scaled - frame;
+  return keyframes[frame] + (keyframes[frame + 1] - keyframes[frame]) * frameProgress;
+}
