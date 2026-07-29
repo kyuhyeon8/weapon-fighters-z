@@ -17,7 +17,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   private selecting: 1 | 2 = 1;
   private p1: FighterId = 'sword';
   private status!: Phaser.GameObjects.Text;
-  private previewAvatar!: Phaser.GameObjects.Image;
+  private previewAvatar!: Phaser.GameObjects.Container;
   private previewName!: Phaser.GameObjects.Text;
   private previewRole!: Phaser.GameObjects.Text;
   private previewStyle!: Phaser.GameObjects.Text;
@@ -25,8 +25,8 @@ export class CharacterSelectScene extends Phaser.Scene {
   private previewMoveBars!: Phaser.GameObjects.Graphics;
   private previewMoveRows: Phaser.GameObjects.Text[] = [];
   private previewMoveValues: Phaser.GameObjects.Text[] = [];
-  private p1RailAvatar!: Phaser.GameObjects.Image;
-  private p2RailAvatar!: Phaser.GameObjects.Image;
+  private p1RailAvatar!: Phaser.GameObjects.Container;
+  private p2RailAvatar!: Phaser.GameObjects.Container;
   private p1RailName!: Phaser.GameObjects.Text;
   private p2RailName!: Phaser.GameObjects.Text;
   private readonly cardFrames = new Map<FighterId, Phaser.GameObjects.Rectangle>();
@@ -82,10 +82,10 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.add.text(1184, 151, '2P', {
       fontFamily: fontTech, fontStyle: 'bold', fontSize: '20px', color: '#ff8db4',
     }).setOrigin(1, 0.5);
-    this.p1RailAvatar = this.add.image(142, 151, 'fighter-sword')
-      .setScale(0.44).setVisible(false);
-    this.p2RailAvatar = this.add.image(1138, 151, 'fighter-fist')
-      .setScale(0.44).setFlipX(true).setVisible(false);
+    this.p1RailAvatar = this.createRosterAvatar(142, 151, 'sword', 0.44)
+      .setVisible(false);
+    this.p2RailAvatar = this.createRosterAvatar(1138, 151, 'fist', 0.44, true)
+      .setVisible(false);
     this.p1RailName = this.add.text(232, 151, '선택 대기', {
       fontFamily: fontBody, fontStyle: 'bold', fontSize: '14px', color: '#d6e8ff',
     }).setOrigin(0.5);
@@ -109,8 +109,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     });
 
     this.add.circle(770, 277, 55, 0x061020, 0.92).setStrokeStyle(2, 0x2c4775, 0.8);
-    this.previewAvatar = this.add.image(770, 278, 'fighter-sword')
-      .setTint(fighters.sword.color).setScale(1.08);
+    this.previewAvatar = this.createRosterAvatar(770, 278, 'sword', 1.08);
     this.previewName = this.add.text(844, 238, '', {
       fontFamily: fontDisplay, fontStyle: 'bold', fontSize: '24px', color: '#ffffff',
     });
@@ -159,7 +158,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const top = this.add.rectangle(0, -71, 170, 6, fighter.color, 0.95);
     const halo = this.add.circle(0, -23, 40, fighter.color, 0.075)
       .setStrokeStyle(2, fighter.color, 0.26);
-    const avatar = this.add.image(0, -22, `fighter-${id}`).setTint(fighter.color).setScale(0.72);
+    const avatar = this.createRosterAvatar(0, -22, id, 0.72);
     const name = this.add.text(0, 35, fighter.title, {
       fontFamily: fontDisplay, fontStyle: 'bold', fontSize: '12px', color: '#ffffff',
     }).setOrigin(0.5);
@@ -195,7 +194,7 @@ export class CharacterSelectScene extends Phaser.Scene {
 
   private showPreview(id: FighterId): void {
     const fighter = fighters[id];
-    this.previewAvatar?.setTexture(`fighter-${id}`).setTint(fighter.color);
+    if (this.previewAvatar) this.populateRosterAvatar(this.previewAvatar, id);
     this.previewName?.setText(fighter.title);
     this.previewRole?.setText(`${fighter.name}  //  ${fighter.role}`);
     this.previewStyle?.setText(fighter.style);
@@ -245,7 +244,8 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (this.selecting === 1) {
       this.p1 = id;
       this.selecting = 2;
-      this.p1RailAvatar.setTexture(`fighter-${id}`).setTint(fighters[id].color).setVisible(true);
+      this.populateRosterAvatar(this.p1RailAvatar, id);
+      this.p1RailAvatar.setVisible(true);
       this.p1RailName.setText(fighters[id].title);
       this.cardBadges.forEach((badge) => badge.setText('').setVisible(false));
       this.cardBadges.get(id)?.setText('1P').setVisible(true);
@@ -253,11 +253,43 @@ export class CharacterSelectScene extends Phaser.Scene {
       this.status.setText('2P가 파이터를 선택하세요').setColor('#ff9fbc');
       return;
     }
-    this.p2RailAvatar.setTexture(`fighter-${id}`).setTint(fighters[id].color).setVisible(true);
+    this.populateRosterAvatar(this.p2RailAvatar, id);
+    this.p2RailAvatar.setVisible(true);
     this.p2RailName.setText(fighters[id].title);
     this.cardBadges.get(id)?.setText(id === this.p1 ? '1P·2P' : '2P').setVisible(true);
     const settings = this.registry.get('settings') as MatchSettings;
     this.registry.set('settings', { ...settings, p1: this.p1, p2: id });
     this.scene.start('MapSelectScene');
+  }
+
+  private createRosterAvatar(
+    x: number,
+    y: number,
+    id: FighterId,
+    scale: number,
+    flipped = false,
+  ): Phaser.GameObjects.Container {
+    const avatar = this.add.container(x, y).setScale(flipped ? -scale : scale, scale);
+    this.populateRosterAvatar(avatar, id);
+    return avatar;
+  }
+
+  private populateRosterAvatar(
+    avatar: Phaser.GameObjects.Container,
+    id: FighterId,
+  ): void {
+    avatar.removeAll(true);
+    if (id !== 'sword') {
+      avatar.add(this.add.image(0, 0, `fighter-${id}`).setTint(fighters[id].color));
+      return;
+    }
+
+    const body = this.add.image(-10, 0, 'fighter-body').setTint(fighters.sword.color);
+    const weapon = this.add.image(0, -1, 'weapon-sword')
+      .setOrigin(0.12, 0.5)
+      .setRotation(Phaser.Math.DegToRad(-28))
+      .setScale(0.88)
+      .setTint(0xffffff);
+    avatar.add([body, weapon]);
   }
 }
