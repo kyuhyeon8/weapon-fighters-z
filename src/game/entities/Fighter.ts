@@ -26,6 +26,7 @@ export interface ActiveAttack {
   phase: AttackPhase;
   direction: -1 | 1;
   hitTargets: Set<number>;
+  sequence: number;
 }
 
 export class Fighter extends Phaser.Physics.Arcade.Sprite {
@@ -39,13 +40,24 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   manaFlashUntil = 0;
   invulnerableUntil = 0;
   slowedUntil = 0;
+  hastenedUntil = 0;
+  enragedUntil = 0;
+  timeStopUntil = 0;
+  movementMultiplier = 1;
+  damageMultiplier = 1;
+  lastDamageTaken = 0;
   private stateUntil = 0;
   private attackCounter = 0;
-  private basicAttackCounter = 0;
+  private basicCounter = 0;
   private lastGrounded = false;
   private jumpBufferedUntil = 0;
   private coyoteUntil = 0;
   private bufferedAttack?: { kind: AttackKind; expiresAt: number };
+  private jumpCutApplied = false;
+  private burnUntil = 0;
+  private nextBurnAt = 0;
+  private burnAttacker?: Fighter;
+  private frozenUntil = 0;
   readonly displayTint: number;
   readonly weapon: Phaser.GameObjects.Image;
 
@@ -103,11 +115,21 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.currentAttack = undefined;
     this.controlEnabled = false;
     this.invulnerableUntil = 0;
+    this.slowedUntil = 0;
+    this.hastenedUntil = 0;
+    this.enragedUntil = 0;
+    this.timeStopUntil = 0;
+    this.movementMultiplier = 1;
+    this.damageMultiplier = 1;
+    this.basicCounter = 0;
+    this.burnUntil = 0;
+    this.burnAttacker = undefined;
+    this.frozenUntil = 0;
     this.jumpBufferedUntil = 0;
     this.coyoteUntil = 0;
     this.bufferedAttack = undefined;
     this.slowedUntil = 0;
-    this.basicAttackCounter = 0;
+    this.jumpCutApplied = false;
     this.bodyRef.enable = true;
     this.updateWeaponPose();
   }
@@ -116,10 +138,11 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     now: number,
     delta: number,
     opponentX: number,
-    input: { left: boolean; right: boolean; jumpPressed: boolean },
+    input: { left: boolean; right: boolean; jumpPressed: boolean; jumpHeld: boolean },
   ): void {
     this.updateAttack(now);
     this.stats = regenerateMana(this.stats, this.fighterConfig.manaRegen, delta / 1000);
+    this.updateBurn(now);
 
     if (this.state === 'KO') {
       this.updateWeaponPose();
@@ -142,6 +165,12 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       this.bufferedAttack = undefined;
       this.startAttack(kind, now);
     }
+    if (now < this.frozenUntil) {
+      this.bodyRef.setAllowGravity(false);
+      this.setVelocity(0, 0);
+    } else {
+      this.bodyRef.setAllowGravity(true);
+    }
 
     if (!this.currentAttack && this.state !== 'HITSTUN' && this.state !== 'STUN') {
       this.facing = opponentX >= this.x ? 1 : -1;
@@ -150,10 +179,15 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
 
     const grounded = this.bodyRef.blocked.down || this.bodyRef.touching.down;
     if (grounded) this.coyoteUntil = now + combatTuning.coyoteMs;
-    if (input.jumpPressed) this.jumpBufferedUntil = now + combatTuning.jumpBufferMs;
+    if (input.jumpPressed) {
+      this.jumpBufferedUntil = now + combatTuning.jumpBufferMs;
+      this.jumpCutApplied = false;
+    }
     const actionLocked = this.currentAttack || this.state === 'HITSTUN' || this.state === 'STUN';
     if (this.controlEnabled && !actionLocked && this.state !== 'RESPAWN_INVULNERABLE') {
-      const speedScale = now < this.slowedUntil ? combatTuning.slowMoveScale : 1;
+      const slowScale = now < this.slowedUntil ? combatTuning.slowMoveScale : 1;
+      const hasteScale = now < this.hastenedUntil ? 1.5 : 1;
+      const speedScale = slowScale * hasteScale * this.movementMultiplier;
       const direction = Number(input.right) - Number(input.left);
       const acceleration = this.fighterConfig.moveSpeed
         * (grounded ? combatTuning.groundAcceleration : combatTuning.airAcceleration)
@@ -170,10 +204,15 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
         this.setVelocityY(-this.fighterConfig.jumpVelocity);
         this.jumpBufferedUntil = 0;
         this.coyoteUntil = 0;
+        this.jumpCutApplied = false;
         this.state = 'JUMP';
         this.emit('jump');
       } else if (grounded) {
         this.state = direction === 0 ? 'IDLE' : 'RUN';
+      }
+      if (!input.jumpHeld && this.bodyRef.velocity.y < -160 && !this.jumpCutApplied) {
+        this.setVelocityY(this.bodyRef.velocity.y * 0.55);
+        this.jumpCutApplied = true;
       }
     } else if (actionLocked && this.currentAttack) {
       this.setAccelerationX(0);
@@ -218,29 +257,64 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       : kind === 'skill'
         ? this.fighterConfig.skill
         : this.fighterConfig.ultimate;
-    if (!canUseMana(this.stats, base.manaCost)) {
+
+    let config = base;
+    let sequence = 0;
+    if (kind === 'basic') {
+      this.basicCounter += 1;
+      sequence = this.basicCounter;
+    }
+    if (kind === 'ultimate' && (this.fighterConfig.id === 'fist' || this.fighterConfig.id === 'clock')) {
+      sequence = this.stats.rage;
+    }
+    if (kind === 'ultimate' && this.fighterConfig.id === 'fist') {
+      config = { ...base, damage: punchRushDamage(this.stats.rage) };
+    } else if (kind === 'basic' && this.fighterConfig.id === 'clock' && now < this.timeStopUntil) {
+      config = {
+        ...base,
+        id: 'clock-minute-hand',
+        name: '분침 연사',
+        damage: 1,
+        startupMs: 20,
+        activeMs: 55,
+        recoveryMs: 25,
+        hitboxWidth: 720,
+        hitboxHeight: 70,
+        hitboxOffsetX: 370,
+      };
+    } else if (this.fighterConfig.id === 'rock' && now < this.enragedUntil && kind === 'basic') {
+      config = {
+        ...base,
+        id: 'rock-lava-punch',
+        name: '용암 주먹',
+        damage: 10,
+        startupMs: 95,
+        activeMs: 110,
+        recoveryMs: 210,
+        hitboxWidth: 84,
+        hitboxHeight: 72,
+        hitboxOffsetX: 52,
+      };
+    } else if (this.fighterConfig.id === 'rock' && now < this.enragedUntil && kind === 'skill') {
+      config = { ...base, manaCost: Math.ceil(base.manaCost * 1.5) };
+    }
+
+    if (!canUseMana(this.stats, config.manaCost)) {
       this.manaFlashUntil = now + 420;
       this.emit('mana-empty');
       return false;
     }
 
-    let config = base;
-    if (kind === 'basic' && this.fighterConfig.id === 'minigun') {
-      this.basicAttackCounter += 1;
-      if (this.basicAttackCounter % 3 === 0) {
-        config = {
-          ...base,
-          name: '강화 6점사',
-          damage: 9,
-          hitstunMs: 170,
-          knockbackX: 145,
-          hitstopMs: 42,
-        };
-      }
-    }
     if (kind === 'ultimate' && this.fighterConfig.id === 'fist') {
-      config = { ...base, damage: punchRushDamage(this.stats.rage) };
       this.stats = consumeRage(this.stats);
+    } else if (kind === 'skill' && this.fighterConfig.id === 'clock') {
+      this.hastenedUntil = now + 5000;
+    } else if (kind === 'ultimate' && this.fighterConfig.id === 'clock') {
+      const duration = 1000 + Math.min(4, this.stats.rage) * 1000;
+      this.timeStopUntil = now + config.startupMs + duration;
+      this.stats = consumeRage(this.stats);
+    } else if (kind === 'ultimate' && this.fighterConfig.id === 'rock') {
+      this.enragedUntil = now + 10000;
     }
     this.stats = spendMana(this.stats, config.manaCost);
     this.currentAttack = {
@@ -251,6 +325,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       phase: 'startup',
       direction: this.facing,
       hitTargets: new Set(),
+      sequence,
     };
     this.state = kind === 'basic' ? 'ATTACK' : kind === 'skill' ? 'SKILL' : 'ULTIMATE';
     this.emit('attack-start', kind);
@@ -260,7 +335,8 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   private updateAttack(now: number): void {
     const attack = this.currentAttack;
     if (!attack) return;
-    const elapsed = now - attack.startedAt;
+    const speed = now < this.hastenedUntil ? 1.5 : 1;
+    const elapsed = (now - attack.startedAt) * speed;
     const activeEnd = attack.config.startupMs + attack.config.activeMs;
     const total = activeEnd + attack.config.recoveryMs;
     const nextPhase: AttackPhase = elapsed < attack.config.startupMs
@@ -282,6 +358,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     const attack = this.currentAttack;
     if (!attack || attack.phase !== 'active') return null;
     const { config, direction } = attack;
+    if (config.damage <= 0) return null;
     const centerX = this.x + config.hitboxOffsetX * direction;
     const centerY = this.y - 24 + config.hitboxOffsetY;
     return new Phaser.Geom.Rectangle(
@@ -338,7 +415,9 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     attacker: Fighter,
     attackKind?: AttackKind,
   ): boolean {
-    this.stats = applyDamage(this.stats, damage);
+    const appliedDamage = Math.max(0, damage * attacker.damageMultiplier);
+    this.lastDamageTaken = appliedDamage;
+    this.stats = applyDamage(this.stats, appliedDamage);
     this.currentAttack = undefined;
     this.bufferedAttack = undefined;
     this.setVelocity(knockbackX, knockbackY);
@@ -348,16 +427,12 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (attacker.fighterConfig.id === 'fist') {
       const gain = attackKind === 'skill' ? 2 : attackKind === 'basic' ? 1 : 0;
       attacker.stats = addRage(attacker.stats, gain);
-      if (attackKind === 'skill') this.slowedUntil = now + 1000;
+      if (attackKind === 'skill') this.slowedUntil = now + 3000;
     }
-    if (attacker.fighterConfig.id === 'clock' && attackKind === 'skill') {
-      this.slowedUntil = now + 1600;
-    }
-    if (attacker.fighterConfig.id === 'plant' && attackKind === 'skill') {
-      attacker.stats = {
-        ...attacker.stats,
-        health: Math.min(attacker.stats.maxHealth, attacker.stats.health + 5),
-      };
+    if (attacker.fighterConfig.id === 'clock'
+      && attacker.currentAttack?.config.id === 'clock-wave'
+      && attackKind === 'basic') {
+      attacker.stats = addRage(attacker.stats, 1);
     }
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(75, () => {
@@ -365,8 +440,29 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
         this.clearTint().setTint(this.displayTint);
       }
     });
-    this.emit('damaged', damage, attacker);
+    this.emit('damaged', appliedDamage, attacker);
     return true;
+  }
+
+  applyStun(now: number, durationMs: number, freeze = false): void {
+    if (this.state === 'KO') return;
+    this.currentAttack = undefined;
+    this.state = 'STUN';
+    this.stateUntil = Math.max(this.stateUntil, now + durationMs);
+    this.setAccelerationX(0);
+    if (freeze) {
+      this.frozenUntil = Math.max(this.frozenUntil, now + durationMs);
+      this.setVelocity(0, 0);
+    } else {
+      this.setVelocityX(0);
+    }
+  }
+
+  applyBurn(attacker: Fighter, now: number, durationMs: number): void {
+    if (this.state === 'KO') return;
+    this.burnAttacker = attacker;
+    this.burnUntil = now + durationMs;
+    this.nextBurnAt = now + 200;
   }
 
   applyVoidFall(now: number): void {
@@ -386,6 +482,20 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     if (this.currentAttack?.phase === 'startup') this.setScale(0.92, 1.06);
     else if (this.currentAttack?.phase === 'active') this.setScale(1.18, 0.94);
     else this.setScale(1);
+  }
+
+  private updateBurn(now: number): void {
+    if (!this.burnAttacker || now >= this.burnUntil || this.state === 'KO') {
+      if (now >= this.burnUntil) this.burnAttacker = undefined;
+      return;
+    }
+    if (now < this.nextBurnAt) return;
+    this.nextBurnAt += 200;
+    const damage = Math.max(0, this.burnAttacker.damageMultiplier);
+    this.stats = applyDamage(this.stats, damage);
+    this.lastDamageTaken = damage;
+    if (this.stats.health <= 0) this.state = 'KO';
+    this.emit('dot-damage', damage, this.burnAttacker);
   }
 
   private updateWeaponPose(): void {
@@ -428,10 +538,10 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     } else if (this.state === 'JUMP') {
       angle -= 28;
     } else if (this.state === 'FALL') {
-      angle += 30;
-    } else if (this.state === 'HITSTUN' || this.state === 'STUN') {
-      angle = 68;
-      reach = 2;
+      angle = 8;
+    } else if (this.state === 'HITSTUN' || this.state === 'STUN' || this.state === 'KO') {
+      angle = 58;
+      reach = 5;
     }
 
     this.weapon

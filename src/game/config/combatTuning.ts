@@ -4,7 +4,7 @@
  * exceptions.
  */
 export const combatTuning = {
-  gravityY: 1500,
+  gravityY: 1650,
   groundAcceleration: 7.2,
   airAcceleration: 4.1,
   groundBraking: 1700,

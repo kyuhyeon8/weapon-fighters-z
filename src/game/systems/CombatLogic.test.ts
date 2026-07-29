@@ -6,8 +6,10 @@ import {
   canUseMana,
   consumeRage,
   determineRoundResult,
+  minigunBurstCount,
   punchRushDamage,
   regenerateMana,
+  shouldApplyInterruptedTrade,
   spendMana,
   type CombatantStats,
 } from './CombatLogic';
@@ -67,5 +69,21 @@ describe('combat calculations', () => {
 
   it('applies 15 void-fall damage', () => {
     expect(applyVoidFall(stats({ health: 34 })).health).toBe(19);
+  });
+
+  it('only preserves a simultaneous trade when the sampled attack was interrupted', () => {
+    expect(shouldApplyInterruptedTrade(true, false)).toBe(true);
+    expect(shouldApplyInterruptedTrade(true, true)).toBe(false);
+    expect(shouldApplyInterruptedTrade(false, false)).toBe(false);
+  });
+
+  it.each([
+    [1, 4],
+    [2, 4],
+    [3, 6],
+    [4, 4],
+    [6, 6],
+  ])('fires the correct minigun burst on attack %i', (sequence, bullets) => {
+    expect(minigunBurstCount(sequence)).toBe(bullets);
   });
 });

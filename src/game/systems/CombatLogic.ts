@@ -53,3 +53,14 @@ export function determineRoundResult(p1Health: number, p2Health: number): RoundR
 export function applyVoidFall(stats: CombatantStats): CombatantStats {
   return applyDamage(stats, combatTuning.voidFallDamage);
 }
+
+export function shouldApplyInterruptedTrade(
+  attackWasSampled: boolean,
+  attackStillActive: boolean,
+): boolean {
+  return attackWasSampled && !attackStillActive;
+}
+
+export function minigunBurstCount(sequence: number): 4 | 6 {
+  return sequence > 0 && sequence % 3 === 0 ? 6 : 4;
+}
