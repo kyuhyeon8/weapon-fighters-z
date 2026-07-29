@@ -575,10 +575,10 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
           1,
         );
         const easedTurn = turnProgress * turnProgress * (3 - 2 * turnProgress);
-        angle = phase === 'active' ? 120 : Phaser.Math.Linear(-82, 120, easedTurn);
-        reach = phase === 'active' ? 0 : 2;
-        vertical = phase === 'active' ? -5 : -28;
-        weaponScale = phase === 'active' ? 1.08 : 0.94;
+        angle = phase === 'active' ? 132 : Phaser.Math.Linear(-82, 132, easedTurn);
+        reach = phase === 'active' ? 38 : 2;
+        vertical = -28;
+        weaponScale = phase === 'active' ? 1.05 : 0.94;
       } else if (phase === 'startup') {
         const windup = { sword: -112, fist: -48, minigun: -12, clock: -105, plant: -82, rock: -128 };
         angle = windup[id];
