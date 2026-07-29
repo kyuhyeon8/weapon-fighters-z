@@ -122,6 +122,12 @@ describe('combat calculations', () => {
     expect(swordWavePositions(500, 430, 570, 2)).toEqual([]);
   });
 
+  it('locks the sword fighter until the final blade wave is summoned', () => {
+    expect(combatTuning.swordSlamLandingLockMs).toBe(
+      combatTuning.swordBladeWaveCount * combatTuning.swordBladeWaveStepMs,
+    );
+  });
+
   it('faces every fighter toward the opponent without jitter at the same x', () => {
     expect(facingTowardOpponent(200, 500, -1)).toBe(1);
     expect(facingTowardOpponent(500, 200, 1)).toBe(-1);

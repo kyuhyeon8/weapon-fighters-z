@@ -23,6 +23,9 @@ export const combatTuning = {
   swordSlamLaunchVelocity: -600,
   swordSlamAscentGravityOffset: -958,
   swordSlamDiveVelocity: 820,
+  swordBladeWaveCount: 3,
+  swordBladeWaveStepMs: 115,
+  swordSlamLandingLockMs: 345,
   voidFallDamage: 15,
   voidRespawnInvulnerabilityMs: 1000,
 } as const;

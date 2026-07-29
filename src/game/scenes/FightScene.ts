@@ -535,25 +535,26 @@ export class FightScene extends Phaser.Scene {
     const surface = this.swordSurfaceAt(attacker);
     if (!surface) return;
     const target = attacker === this.p1 ? this.p2 : this.p1;
-    [1, 2, 3].forEach((step) => {
-      this.time.delayedCall(step * 115, () => {
-        if (!attacker.active) return;
-        const positions = swordWavePositions(attacker.x, surface.left, surface.right, step);
-        const hitAreas = positions.map((x) => {
-          this.createSwordBlade(x, surface.top, attacker.fighterConfig.color);
-          return new Phaser.Geom.Rectangle(x - 22, surface.top - 94, 44, 96);
-        });
-        if (hitAreas.some((area) => Phaser.Geom.Intersects.RectangleToRectangle(
-          area,
-          target.getHurtbox(),
-        ))) {
-          const direction = target.x >= attacker.x ? 1 : -1;
-          if (target.receiveBonusHit(5, direction * 120, -90, this.time.now, attacker, 140)) {
-            this.damageNumber(target.x, target.y - 100, 5);
+    Array.from({ length: combatTuning.swordBladeWaveCount }, (_, index) => index + 1)
+      .forEach((step) => {
+        this.time.delayedCall(step * combatTuning.swordBladeWaveStepMs, () => {
+          if (!attacker.active) return;
+          const positions = swordWavePositions(attacker.x, surface.left, surface.right, step);
+          const hitAreas = positions.map((x) => {
+            this.createSwordBlade(x, surface.top, attacker.fighterConfig.color);
+            return new Phaser.Geom.Rectangle(x - 22, surface.top - 94, 44, 96);
+          });
+          if (hitAreas.some((area) => Phaser.Geom.Intersects.RectangleToRectangle(
+            area,
+            target.getHurtbox(),
+          ))) {
+            const direction = target.x >= attacker.x ? 1 : -1;
+            if (target.receiveBonusHit(5, direction * 120, -90, this.time.now, attacker, 140)) {
+              this.damageNumber(target.x, target.y - 100, 5);
+            }
           }
-        }
+        });
       });
-    });
   }
 
   private swordSurfaceAt(attacker: Fighter): SwordSurface | undefined {
