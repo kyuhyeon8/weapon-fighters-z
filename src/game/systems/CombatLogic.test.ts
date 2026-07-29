@@ -10,6 +10,8 @@ import {
   punchRushDamage,
   regenerateMana,
   shouldApplyInterruptedTrade,
+  shouldSwordSlamDive,
+  shouldSwordSlamLand,
   spendMana,
   type CombatantStats,
 } from './CombatLogic';
@@ -85,5 +87,17 @@ describe('combat calculations', () => {
     [6, 6],
   ])('fires the correct minigun burst on attack %i', (sequence, bullets) => {
     expect(minigunBurstCount(sequence)).toBe(bullets);
+  });
+
+  it('switches the sword skill from ascent to dive at the apex or timeout', () => {
+    expect(shouldSwordSlamDive(250, -320)).toBe(false);
+    expect(shouldSwordSlamDive(250, -10)).toBe(true);
+    expect(shouldSwordSlamDive(420, -200)).toBe(true);
+  });
+
+  it('ends the sword skill only after touching ground or a platform', () => {
+    expect(shouldSwordSlamLand(500, false)).toBe(false);
+    expect(shouldSwordSlamLand(80, true)).toBe(false);
+    expect(shouldSwordSlamLand(500, true)).toBe(true);
   });
 });

@@ -27,9 +27,9 @@ export const fighters: Record<FighterId, FighterConfig> = {
     },
     skill: {
       id: 'sword-slam', name: '내려찍기', damage: 20, manaCost: 30,
-      startupMs: 250, activeMs: 120, recoveryMs: 410, hitstunMs: 330,
-      knockbackX: 240, knockbackY: -250, hitboxWidth: 96, hitboxHeight: 118,
-      hitboxOffsetX: 54, hitboxOffsetY: 10, hitstopMs: 70, lungeVelocity: 80,
+      startupMs: 420, activeMs: 1000, recoveryMs: 0, hitstunMs: 330,
+      knockbackX: 180, knockbackY: -250, hitboxWidth: 104, hitboxHeight: 124,
+      hitboxOffsetX: 0, hitboxOffsetY: 46, hitstopMs: 70,
     },
     ultimate: {
       id: 'sword-screen-slash', name: '화면 연속 베기', damage: 10, manaCost: 75,
@@ -39,7 +39,7 @@ export const fighters: Record<FighterId, FighterConfig> = {
     },
     descriptions: {
       basic: '빠른 장검 베기 · 피해 7',
-      skill: '내려찍기 + 칼날 파편 3개 · 최대 피해 35 · 마나 30',
+      skill: '급상승 후 고속 낙하 · 착지까지 좌우 이동 · 피해 20 + 파편',
       ultimate: '화면 연속 베기 · 총 피해 55 · 마나 75',
     },
   },

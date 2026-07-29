@@ -42,6 +42,7 @@ export class FightScene extends Phaser.Scene {
   private debugHandler?: () => void;
   private escapeHandler?: () => void;
   private plantNodes: PlantNode[] = [];
+  private swordTrailAt = new Map<number, number>();
 
   constructor() { super('FightScene'); }
 
@@ -51,6 +52,7 @@ export class FightScene extends Phaser.Scene {
     this.roundEnding = false;
     this.isPaused = false;
     this.debugVisible = false;
+    this.swordTrailAt.clear();
     this.pauseObjects = [];
     this.controlsBeforePause = [false, false];
     this.countdown = undefined;
@@ -151,6 +153,8 @@ export class FightScene extends Phaser.Scene {
     };
     this.p1.updateFighter(time, delta, this.p2.x, p1Move);
     this.p2.updateFighter(time, delta, this.p1.x, p2Move);
+    this.updateSwordSlamTrail(this.p1, time);
+    this.updateSwordSlamTrail(this.p2, time);
 
     this.handleAttackInput(this.p1, this.inputs.p1, time);
     this.handleAttackInput(this.p2, this.inputs.p2, time);
@@ -252,13 +256,26 @@ export class FightScene extends Phaser.Scene {
     });
     fighter.on('attack-active', (kind: AttackKind) => {
       this.attackVisual(fighter, kind);
-      if (fighter.fighterConfig.id === 'sword' && kind === 'skill') this.spawnSwordShards(fighter);
       if (fighter.fighterConfig.id === 'minigun' && kind === 'ultimate') this.spawnLaserBarrage(fighter);
       if (fighter.fighterConfig.id === 'clock' && kind === 'ultimate') this.startTimeStop(fighter);
       if (fighter.fighterConfig.id === 'plant' && kind === 'basic') this.waterSeeds(fighter);
       if (fighter.fighterConfig.id === 'plant' && kind === 'skill') this.plantSeed(fighter);
       if (fighter.fighterConfig.id === 'plant' && kind === 'ultimate') this.launchTrees(fighter);
       if (fighter.fighterConfig.id === 'rock' && kind === 'skill') this.spawnRockSpikes(fighter);
+    });
+    fighter.on('sword-slam-dive', () => {
+      this.cameras.main.shake(90, 0.004);
+    });
+    fighter.on('sword-slam-land', (attack: ActiveAttack) => {
+      this.sounds.play('hit');
+      this.swordSlamImpact(fighter);
+      const target = fighter === this.p1 ? this.p2 : this.p1;
+      const impactArea = new Phaser.Geom.Rectangle(fighter.x - 92, fighter.y - 78, 184, 104);
+      if (Phaser.Geom.Intersects.RectangleToRectangle(impactArea, target.getHurtbox())
+        && target.receiveAttackSnapshot(fighter, attack, this.time.now)) {
+        this.onHit(fighter, target, attack);
+      }
+      this.spawnSwordShards(fighter);
     });
     fighter.on('mana-empty', () => {
       const label = this.add.text(fighter.x, fighter.y - 132, '마나 부족!', {
@@ -521,6 +538,68 @@ export class FightScene extends Phaser.Scene {
         }
       });
     });
+  }
+
+  private updateSwordSlamTrail(fighter: Fighter, now: number): void {
+    const attack = fighter.currentAttack;
+    if (attack?.config.id !== 'sword-slam') {
+      this.swordTrailAt.delete(fighter.playerNumber);
+      return;
+    }
+    const nextTrailAt = this.swordTrailAt.get(fighter.playerNumber) ?? 0;
+    if (now < nextTrailAt) return;
+    this.swordTrailAt.set(fighter.playerNumber, now + 42);
+    const descending = attack.phase === 'active';
+    const ghost = this.add.rectangle(
+      fighter.x,
+      fighter.y + (descending ? -38 : 38),
+      descending ? 18 : 24,
+      descending ? 34 : 24,
+      fighter.fighterConfig.color,
+      0.62,
+    ).setStrokeStyle(2, 0xffffff, 0.24).setDepth(9);
+    this.tweens.add({
+      targets: ghost,
+      alpha: 0,
+      scale: 0.42,
+      y: ghost.y + (descending ? -30 : 30),
+      duration: 210,
+      onComplete: () => ghost.destroy(),
+    });
+  }
+
+  private swordSlamImpact(fighter: Fighter): void {
+    const color = fighter.fighterConfig.color;
+    const ring = this.add.ellipse(fighter.x, fighter.y + 5, 52, 14, color, 0.6)
+      .setStrokeStyle(5, 0xffffff, 0.7).setDepth(18);
+    this.tweens.add({
+      targets: ring,
+      scaleX: 3.2,
+      scaleY: 1.8,
+      alpha: 0,
+      duration: 260,
+      onComplete: () => ring.destroy(),
+    });
+    for (let index = -2; index <= 2; index += 1) {
+      const debris = this.add.rectangle(
+        fighter.x + index * 12,
+        fighter.y + 2,
+        8,
+        16,
+        index % 2 === 0 ? 0xffffff : color,
+        0.9,
+      ).setDepth(19);
+      this.tweens.add({
+        targets: debris,
+        x: debris.x + index * 24,
+        y: debris.y - 32 - Math.abs(index) * 9,
+        angle: index * 70,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => debris.destroy(),
+      });
+    }
+    this.cameras.main.shake(150, 0.01);
   }
 
   private attackVisual(fighter: Fighter, kind: AttackKind): void {

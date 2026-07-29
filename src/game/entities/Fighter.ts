@@ -8,6 +8,8 @@ import {
   consumeRage,
   punchRushDamage,
   regenerateMana,
+  shouldSwordSlamDive,
+  shouldSwordSlamLand,
   spendMana,
   type CombatantStats,
 } from '../systems/CombatLogic';
@@ -58,6 +60,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   private nextBurnAt = 0;
   private burnAttacker?: Fighter;
   private frozenUntil = 0;
+  private swordSlamDescending = false;
   readonly displayTint: number;
   readonly weapon: Phaser.GameObjects.Image;
 
@@ -125,6 +128,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.burnUntil = 0;
     this.burnAttacker = undefined;
     this.frozenUntil = 0;
+    this.swordSlamDescending = false;
     this.jumpBufferedUntil = 0;
     this.coyoteUntil = 0;
     this.bufferedAttack = undefined;
@@ -178,13 +182,37 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.setFlipX(this.facing < 0);
 
     const grounded = this.bodyRef.blocked.down || this.bodyRef.touching.down;
+    const swordSlam = this.currentAttack?.config.id === 'sword-slam'
+      ? this.currentAttack
+      : undefined;
+    if (swordSlam && shouldSwordSlamLand(now - swordSlam.startedAt, grounded)) {
+      this.currentAttack = undefined;
+      this.swordSlamDescending = false;
+      this.state = 'IDLE';
+      this.setVelocityY(0);
+      this.emit('sword-slam-land', swordSlam);
+    }
     if (grounded) this.coyoteUntil = now + combatTuning.coyoteMs;
     if (input.jumpPressed) {
       this.jumpBufferedUntil = now + combatTuning.jumpBufferMs;
       this.jumpCutApplied = false;
     }
     const actionLocked = this.currentAttack || this.state === 'HITSTUN' || this.state === 'STUN';
-    if (this.controlEnabled && !actionLocked && this.state !== 'RESPAWN_INVULNERABLE') {
+    if (this.controlEnabled && swordSlam && this.currentAttack) {
+      const slowScale = now < this.slowedUntil ? combatTuning.slowMoveScale : 1;
+      const direction = Number(input.right) - Number(input.left);
+      const maxMoveSpeed = this.fighterConfig.moveSpeed * slowScale;
+      this.setAccelerationX(
+        direction * this.fighterConfig.moveSpeed * combatTuning.airAcceleration * slowScale,
+      );
+      this.setDragX(direction === 0 ? combatTuning.airBraking : combatTuning.activeMoveDrag);
+      if (Math.abs(this.bodyRef.velocity.x) > maxMoveSpeed) {
+        this.setVelocityX(Phaser.Math.Clamp(this.bodyRef.velocity.x, -maxMoveSpeed, maxMoveSpeed));
+      }
+      if (this.swordSlamDescending && this.bodyRef.velocity.y < 1080) {
+        this.setVelocityY(1080);
+      }
+    } else if (this.controlEnabled && !actionLocked && this.state !== 'RESPAWN_INVULNERABLE') {
       const slowScale = now < this.slowedUntil ? combatTuning.slowMoveScale : 1;
       const hasteScale = now < this.hastenedUntil ? 1.5 : 1;
       const speedScale = slowScale * hasteScale * this.movementMultiplier;
@@ -327,6 +355,11 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
       hitTargets: new Set(),
       sequence,
     };
+    if (config.id === 'sword-slam') {
+      this.swordSlamDescending = false;
+      this.setVelocityY(-760);
+      this.setAccelerationY(0);
+    }
     this.state = kind === 'basic' ? 'ATTACK' : kind === 'skill' ? 'SKILL' : 'ULTIMATE';
     this.emit('attack-start', kind);
     return true;
@@ -335,6 +368,17 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   private updateAttack(now: number): void {
     const attack = this.currentAttack;
     if (!attack) return;
+    if (attack.config.id === 'sword-slam') {
+      const elapsed = now - attack.startedAt;
+      if (!this.swordSlamDescending && shouldSwordSlamDive(elapsed, this.bodyRef.velocity.y)) {
+        this.swordSlamDescending = true;
+        attack.phase = 'active';
+        this.setVelocityY(1080);
+        this.emit('attack-active', attack.kind);
+        this.emit('sword-slam-dive');
+      }
+      return;
+    }
     const speed = now < this.hastenedUntil ? 1.5 : 1;
     const elapsed = (now - attack.startedAt) * speed;
     const activeEnd = attack.config.startupMs + attack.config.activeMs;
@@ -419,6 +463,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
     this.lastDamageTaken = appliedDamage;
     this.stats = applyDamage(this.stats, appliedDamage);
     this.currentAttack = undefined;
+    this.swordSlamDescending = false;
     this.bufferedAttack = undefined;
     this.setVelocity(knockbackX, knockbackY);
     this.state = this.stats.health <= 0 ? 'KO' : 'HITSTUN';
@@ -447,6 +492,7 @@ export class Fighter extends Phaser.Physics.Arcade.Sprite {
   applyStun(now: number, durationMs: number, freeze = false): void {
     if (this.state === 'KO') return;
     this.currentAttack = undefined;
+    this.swordSlamDescending = false;
     this.state = 'STUN';
     this.stateUntil = Math.max(this.stateUntil, now + durationMs);
     this.setAccelerationX(0);

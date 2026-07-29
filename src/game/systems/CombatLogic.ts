@@ -64,3 +64,11 @@ export function shouldApplyInterruptedTrade(
 export function minigunBurstCount(sequence: number): 4 | 6 {
   return sequence > 0 && sequence % 3 === 0 ? 6 : 4;
 }
+
+export function shouldSwordSlamDive(elapsedMs: number, verticalVelocity: number): boolean {
+  return elapsedMs >= 420 || verticalVelocity >= -20;
+}
+
+export function shouldSwordSlamLand(elapsedMs: number, grounded: boolean): boolean {
+  return elapsedMs >= 140 && grounded;
+}
