@@ -571,41 +571,39 @@ export class FightScene extends Phaser.Scene {
   }
 
   private createSwordBlade(x: number, surfaceTop: number, color: number): void {
-    const blade = this.add.polygon(
-      x,
-      surfaceTop + 12,
-      [0, -96, 17, -75, 14, 0, -14, 0, -17, -75],
-      0xdfe5ef,
-      0.98,
-    ).setStrokeStyle(4, 0x090d18, 1).setDepth(16).setScale(1, 0.08);
-    const highlight = this.add.polygon(
-      x - 4,
-      surfaceTop + 7,
-      [0, -86, 7, -70, 5, -5, -5, -5, -7, -70],
-      0xffffff,
-      0.76,
-    ).setDepth(17).setScale(1, 0.08);
+    const blade = this.add.graphics({ x, y: surfaceTop + 12 }).setDepth(16);
+    const bladePoints = [
+      new Phaser.Geom.Point(-14, 0),
+      new Phaser.Geom.Point(-16, -72),
+      new Phaser.Geom.Point(0, -96),
+      new Phaser.Geom.Point(16, -72),
+      new Phaser.Geom.Point(14, 0),
+    ];
+    blade.fillStyle(0xdfe5ef, 0.98).fillPoints(bladePoints, true);
+    blade.lineStyle(4, 0x090d18, 1).strokePoints(bladePoints, true);
+    blade.lineStyle(2, 0xffffff, 0.72)
+      .lineBetween(0, -90, 0, -4)
+      .lineBetween(0, -90, 12, -70);
+    blade.setScale(1, 0.08);
     const maskSource = this.make.graphics({ x: 0, y: 0 });
     maskSource.fillStyle(0xffffff).fillRect(x - 30, surfaceTop - 112, 60, 112);
     const groundMask = maskSource.createGeometryMask();
     blade.setMask(groundMask);
-    highlight.setMask(groundMask);
     const glow = this.add.ellipse(x, surfaceTop, 38, 10, color, 0.68).setDepth(15);
     this.tweens.add({
-      targets: [blade, highlight],
+      targets: blade,
       scaleY: 1,
       duration: 125,
       ease: 'Back.Out',
     });
     this.tweens.add({
-      targets: [blade, highlight, glow],
+      targets: [blade, glow],
       y: '-=8',
       alpha: 0,
       delay: 250,
       duration: 230,
       onComplete: () => {
         blade.destroy();
-        highlight.destroy();
         glow.destroy();
         groundMask.destroy();
         maskSource.destroy();
